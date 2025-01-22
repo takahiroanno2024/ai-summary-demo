@@ -229,6 +229,62 @@ app.post('/api/projects/:projectId/generate-questions', async (req, res) => {
 });
 
 // コメント関連のエンドポイント
+// コメントの一括インポート
+app.post('/api/projects/:projectId/comments/bulk', async (req, res) => {
+  try {
+    const { comments } = req.body;
+    const projectId = req.params.projectId;
+
+    if (!Array.isArray(comments)) {
+      return res.status(400).json({ message: 'Comments must be an array' });
+    }
+
+    // プロジェクトの取得
+    const project = await Project.findById(projectId);
+    if (!project) {
+      return res.status(404).json({ message: 'Project not found' });
+    }
+
+    // コメントを並列で処理
+    const processedComments = await processInBatches(
+      comments,
+      PARALLEL_ANALYSIS_LIMIT,
+      async (commentContent) => {
+        // 内容の抽出
+        const extractedContent = await extractContent(commentContent, project.extractionTopic);
+
+        // 抽出結果がnullの場合は立場分析をスキップ
+        const stances = extractedContent === null ? [] : await stanceAnalyzer.analyzeAllStances(
+          extractedContent,
+          project.questions.map(q => ({
+            id: q.id,
+            text: q.text,
+            stances: q.stances,
+          }))
+        );
+
+        // コメントオブジェクトの作成
+        return new Comment({
+          content: commentContent,
+          projectId,
+          extractedContent,
+          stances,
+        });
+      }
+    );
+
+    // 全コメントを一括保存
+    const savedComments = await Comment.insertMany(processedComments);
+    res.status(201).json(savedComments);
+  } catch (error) {
+    console.error('Error importing comments:', error);
+    res.status(400).json({
+      message: 'Error importing comments',
+      error: error instanceof Error ? error.message : 'Unknown error'
+    });
+  }
+});
+
 // プロジェクトのコメント一覧の取得
 app.get('/api/projects/:projectId/comments', async (req, res) => {
   try {
@@ -257,15 +313,15 @@ app.post('/api/projects/:projectId/comments', async (req, res) => {
     const extractedContent = await extractContent(content, project.extractionTopic);
 
     // // 抽出結果がnullの場合（トピックなし、無関係、エラー）は立場分析をスキップ
-    // const stances = extractedContent === null ? [] : await stanceAnalyzer.analyzeAllStances(
-    //   extractedContent,
-    //   project.questions.map(q => ({
-    //     id: q.id,
-    //     text: q.text,
-    //     stances: q.stances,
-    //   }))
-    // );
-    const stances: any[] = [];
+    const stances = extractedContent === null ? [] : await stanceAnalyzer.analyzeAllStances(
+      extractedContent,
+      project.questions.map(q => ({
+        id: q.id,
+        text: q.text,
+        stances: q.stances,
+      }))
+    );
+    // const stances: any[] = [];
 
     // コメントの保存
     const comment = new Comment({
