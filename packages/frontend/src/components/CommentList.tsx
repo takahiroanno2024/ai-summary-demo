@@ -31,8 +31,13 @@ export const CommentList = ({ comments, project }: CommentListProps) => {
   const getStanceName = (questionId: string, stanceId: string): string | null => {
     const question = project.questions.find(q => q.id === questionId);
     if (!question) return null;
+    
+    // 特殊な立場のIDを確認
+    if (stanceId === 'neutral') return null; // 「立場なし」は表示しない
+    if (stanceId === 'other') return 'その他の立場';
+    
     const stance = question.stances.find(s => s.id === stanceId);
-    if (!stance || stance.name === '立場なし') return null;
+    if (!stance) return null;
     return stance.name;
   };
 
