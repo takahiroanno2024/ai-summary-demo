@@ -2,8 +2,7 @@ import { useEffect, useState } from 'react';
 import { Project, Question } from '../types/project';
 import { ProjectList } from '../components/ProjectList';
 import { ProjectForm } from '../components/ProjectForm';
-
-const API_URL = 'http://localhost:3001/api';
+import { API_URL } from '../config/api';
 
 export const HomePage = () => {
   const [projects, setProjects] = useState<Project[]>([]);

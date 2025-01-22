@@ -6,8 +6,7 @@ import { CommentList } from '../components/CommentList';
 import { CommentForm } from '../components/CommentForm';
 import { StanceAnalytics } from '../components/StanceAnalytics';
 import { QuestionGenerationButton } from '../components/QuestionGenerationButton';
-
-const API_URL = 'http://localhost:3001/api';
+import { API_URL } from '../config/api';
 
 export const ProjectPage = () => {
   const { projectId } = useParams<{ projectId: string }>();
