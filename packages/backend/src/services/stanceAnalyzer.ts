@@ -2,17 +2,35 @@ import { GoogleGenerativeAI } from '@google/generative-ai';
 
 export interface StanceAnalysisResult {
   questionId: string;
-  stanceId: string;
-  confidence: number;
+  stanceId: string | null;
+  confidence: number | null;
 }
 
 export class StanceAnalyzer {
   private genAI: GoogleGenerativeAI;
   private model: any;
+  private lastRequestTime: number = 0;
+  private readonly MIN_DELAY_MS: number = 1000; // 1秒の最小遅延
 
   constructor(apiKey: string) {
     this.genAI = new GoogleGenerativeAI(apiKey);
     this.model = this.genAI.getGenerativeModel({ model: 'gemini-2.0-flash-exp' });
+  }
+
+  private async delay(ms: number): Promise<void> {
+    return new Promise(resolve => setTimeout(resolve, ms));
+  }
+
+  private async enforceRateLimit(): Promise<void> {
+    const now = Date.now();
+    const timeSinceLastRequest = now - this.lastRequestTime;
+    
+    if (timeSinceLastRequest < this.MIN_DELAY_MS) {
+      const delayTime = this.MIN_DELAY_MS - timeSinceLastRequest;
+      await this.delay(delayTime);
+    }
+    
+    this.lastRequestTime = Date.now();
   }
 
   private async generatePrompt(
@@ -44,7 +62,7 @@ ${comment}
 `;
   }
 
-  private async parseResponse(response: string): Promise<{ stance: string; confidence: number }> {
+  private async parseResponse(response: string): Promise<{ stance: string | null; confidence: number | null }> {
     try {
       const cleaned = response.replace(/```json|```/g, '').trim();
       const result = JSON.parse(cleaned);
@@ -55,8 +73,8 @@ ${comment}
     } catch (error) {
       console.error('Failed to parse Gemini response:', error);
       return {
-        stance: '立場なし',
-        confidence: 0,
+        stance: null,
+        confidence: null,
       };
     }
   }
@@ -91,6 +109,7 @@ ${comment}
       const prompt = await this.generatePrompt(comment, questionText, stancesWithSpecial);
       console.log('Generated Prompt:', prompt);
       
+      await this.enforceRateLimit();
       const result = await this.model.generateContent(prompt);
       const response = result.response.text();
       console.log('LLM Response:', response);
@@ -101,15 +120,11 @@ ${comment}
       const matchedStance = stancesWithSpecial.find(s => s.name === stance);
       
       if (!matchedStance) {
-        // マッチする立場が見つからない場合は立場なしを返す
-        const neutralStance = stancesWithSpecial.find(s => s.name === '立場なし');
-        if (!neutralStance) {
-          throw new Error('Neutral stance not found');
-        }
+        // マッチする立場が見つからない場合はnullを返す
         return {
           questionId,
-          stanceId: neutralStance.id,
-          confidence: 0,
+          stanceId: null,
+          confidence: null,
         };
       }
       
@@ -120,24 +135,41 @@ ${comment}
       };
     } catch (error) {
       console.error('Stance analysis failed:', error);
-      const neutralStance = this.ensureSpecialStances(stances).find(s => s.name === '立場なし');
       return {
         questionId,
-        stanceId: neutralStance!.id,
-        confidence: 0,
+        stanceId: null,
+        confidence: null,
       };
     }
   }
 
   async analyzeAllStances(
     comment: string,
-    questions: { id: string; text: string; stances: { id: string; name: string }[] }[]
+    questions: { id: string; text: string; stances: { id: string; name: string }[] }[],
+    existingStances: StanceAnalysisResult[] = []
   ): Promise<StanceAnalysisResult[]> {
-    const results = await Promise.all(
-      questions.map(question =>
-        this.analyzeStance(comment, question.id, question.text, question.stances)
-      )
+    // 新しい問いと既存の分析結果をマッピング
+    const existingStanceMap = new Map(
+      existingStances.map(stance => [stance.questionId, stance])
     );
+
+    // 各問いに対して処理（Promise.allを維持）
+    const results = await Promise.all(
+      questions.map(async (question, index) => {
+        // 既存の分析結果があれば再利用
+        const existingStance = existingStanceMap.get(question.id);
+        if (existingStance) {
+          return existingStance;
+        }
+
+        // インデックスに基づいて初期遅延を設定（リクエストの分散）
+        await this.delay(index * (this.MIN_DELAY_MS / 2));
+
+        // 新しい問いに対してのみ分析を実行
+        return this.analyzeStance(comment, question.id, question.text, question.stances);
+      })
+    );
+
     return results;
   }
 }

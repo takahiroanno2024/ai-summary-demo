@@ -1,11 +1,11 @@
 import mongoose from 'mongoose';
 
-interface IStance {
+export interface IStance {
   id: string;
   name: string;
 }
 
-interface IQuestion {
+export interface IQuestion {
   id: string;
   text: string;
   stances: IStance[];

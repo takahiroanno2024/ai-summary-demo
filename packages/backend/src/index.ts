@@ -3,7 +3,7 @@ import mongoose from 'mongoose';
 import cors from 'cors';
 import dotenv from 'dotenv';
 import { Comment, IComment } from './models/comment';
-import { Project, IProject } from './models/project';
+import { Project, IProject, IQuestion } from './models/project';
 import { extractContent } from './services/extractionService';
 import { StanceAnalyzer } from './services/stanceAnalyzer';
 
@@ -71,37 +71,103 @@ app.get('/api/projects/:projectId', async (req, res) => {
 app.put('/api/projects/:projectId', async (req, res) => {
   try {
     const { name, description, extractionTopic, questions } = req.body;
+    const projectId = req.params.projectId;
+
+    // 現在のプロジェクトを取得
+    const currentProject = await Project.findById(projectId);
+    if (!currentProject) {
+      return res.status(404).json({ message: 'Project not found' });
+    }
+
+    // 問いが変更されているか確認
+    const hasQuestionsChanged = JSON.stringify(currentProject.questions) !== JSON.stringify(questions);
+
+    // プロジェクトを更新
     const updatedProject = await Project.findByIdAndUpdate(
-      req.params.projectId,
+      projectId,
       { name, description, extractionTopic, questions },
       { new: true }
     );
-    if (!updatedProject) {
-      return res.status(404).json({ message: 'Project not found' });
+
+    // 問いが変更された場合、全コメントの立場を再分析
+    if (hasQuestionsChanged && questions) {
+      const comments = await Comment.find({ projectId });
+      
+      for (const comment of comments) {
+        if (comment.extractedContent) {
+          const newStances = await stanceAnalyzer.analyzeAllStances(
+            comment.extractedContent,
+            questions.map((q: IQuestion) => ({
+              id: q.id,
+              text: q.text,
+              stances: q.stances,
+            })),
+            comment.stances || [] // 既存の分析結果を渡す
+          );
+          
+          await Comment.findByIdAndUpdate(comment._id, { stances: newStances });
+        }
+      }
     }
+
     res.json(updatedProject);
   } catch (error) {
     res.status(500).json({ message: 'Error updating project', error });
   }
 });
 
-// プロジェクトの問いと立場の更新
-app.put('/api/projects/:projectId/questions', async (req, res) => {
-  try {
-    const { questions } = req.body;
-    const updatedProject = await Project.findByIdAndUpdate(
-      req.params.projectId,
-      { questions },
-      { new: true }
-    );
-    if (!updatedProject) {
-      return res.status(404).json({ message: 'Project not found' });
-    }
-    res.json(updatedProject);
-  } catch (error) {
-    res.status(500).json({ message: 'Error updating project questions', error });
-  }
-});
+// // プロジェクトの問いと立場の更新
+// app.put('/api/projects/:projectId/questions', async (req, res) => {
+//   try {
+//     const { questions } = req.body;
+//     const projectId = req.params.projectId;
+
+//     console.log('Received questions:', questions);
+//     console.log('Project ID:', projectId);
+
+//     // プロジェクトの更新
+//     const updatedProject = await Project.findByIdAndUpdate(
+//       projectId,
+//       { questions },
+//       { new: true }
+//     );
+//     if (!updatedProject) {
+//       console.log('Project not found');
+//       return res.status(404).json({ message: 'Project not found' });
+//     }
+
+//     console.log('Updated project:', updatedProject);
+
+//     // プロジェクトの全コメントを取得
+//     const comments = await Comment.find({ projectId });
+//     console.log('Comments found:', comments.length);
+
+//     // 抽出されたコンテンツがあるコメントのみを再分析
+//     for (const comment of comments) {
+//       if (comment.extractedContent) {
+//         console.log('Reanalyzing comment:', comment._id);
+//         const newStances = await stanceAnalyzer.analyzeAllStances(
+//           comment.extractedContent,
+//           questions.map((q: { id: string; text: string; stances: { id: string; name: string }[] }) => ({
+//             id: q.id,
+//             text: q.text,
+//             stances: q.stances,
+//           })),
+//           comment.stances || [] // 既存の分析結果を渡す
+//         );
+
+//         // コメントの立場情報を更新
+//         await Comment.findByIdAndUpdate(comment._id, { stances: newStances });
+//         console.log('Updated stances for comment:', comment._id);
+//       }
+//     }
+
+//     res.json(updatedProject);
+//   } catch (error) {
+//     console.error('Error updating project questions:', error);
+//     res.status(500).json({ message: 'Error updating project questions', error });
+//   }
+// });
 
 // コメント関連のエンドポイント
 // プロジェクトのコメント一覧の取得
