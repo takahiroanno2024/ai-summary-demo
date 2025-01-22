@@ -133,7 +133,7 @@ app.post('/api/projects/:projectId/comments', async (req, res) => {
 
     // 抽出結果がnullの場合（トピックなし、無関係、エラー）は立場分析をスキップ
     const stances = extractedContent === null ? [] : await stanceAnalyzer.analyzeAllStances(
-      content,
+      extractedContent,
       project.questions.map(q => ({
         id: q.id,
         text: q.text,
