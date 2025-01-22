@@ -1,6 +1,6 @@
 import mongoose from 'mongoose';
 
-interface ICommentStance {
+export interface ICommentStance {
   questionId: string;
   stanceId: string;
   confidence: number;

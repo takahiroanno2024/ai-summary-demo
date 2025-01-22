@@ -9,6 +9,17 @@ export interface Question {
   stances: Stance[];
 }
 
+export interface StanceAnalysisReport {
+  question: string;
+  stanceAnalysis: {
+    [key: string]: {
+      count: number;
+      comments: string[];
+    };
+  };
+  analysis: string;
+}
+
 export interface Project {
   _id: string;
   name: string;

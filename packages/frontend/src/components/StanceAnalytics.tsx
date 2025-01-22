@@ -1,7 +1,8 @@
-import { useState } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import { Comment } from '../types/comment';
-import { Project, Question } from '../types/project';
+import { Project, Question, StanceAnalysisReport } from '../types/project';
 import { PieChart, Pie, Cell, ResponsiveContainer, Legend, Tooltip } from 'recharts';
+import ReactMarkdown from 'react-markdown';
 
 interface StanceAnalyticsProps {
   comments: Comment[];
@@ -42,6 +43,38 @@ export const StanceAnalytics = ({ comments, project }: StanceAnalyticsProps) => 
   const [selectedQuestion, setSelectedQuestion] = useState<Question | null>(
     project.questions.length > 0 ? project.questions[0] : null
   );
+  const [analysisReport, setAnalysisReport] = useState<StanceAnalysisReport | null>(null);
+  const [isLoadingReport, setIsLoadingReport] = useState(false);
+
+  const fetchAnalysisReport = useCallback(async () => {
+    if (!selectedQuestion) return;
+
+    try {
+      setIsLoadingReport(true);
+      const response = await fetch(
+        `/api/projects/${project._id}/questions/${selectedQuestion.id}/stance-analysis`
+      );
+      
+      if (!response.ok) {
+        throw new Error('Failed to fetch analysis report');
+      }
+
+      const report = await response.json();
+      setAnalysisReport(report);
+    } catch (error) {
+      console.error('Error fetching analysis report:', error);
+      // TODO: エラー処理を追加
+    } finally {
+      setIsLoadingReport(false);
+    }
+  }, [project._id, selectedQuestion]);
+
+  // 質問が変更されたら自動的に分析結果を取得
+  useEffect(() => {
+    if (selectedQuestion) {
+      fetchAnalysisReport();
+    }
+  }, [selectedQuestion, fetchAnalysisReport]);
 
   // 問いと立場ごとのコメントを集計
   const calculateStanceStats = (question: Question): Record<string, StanceStats> => {
@@ -98,7 +131,10 @@ export const StanceAnalytics = ({ comments, project }: StanceAnalyticsProps) => 
           {project.questions.map((question, index) => (
             <button
               key={question.id}
-              onClick={() => setSelectedQuestion(question)}
+              onClick={() => {
+                setSelectedQuestion(question);
+                setAnalysisReport(null); // 質問が変更されたらレポートをリセット
+              }}
               className={`
                 whitespace-nowrap py-4 px-4 border-b-2 font-medium text-sm
                 ${
@@ -179,6 +215,27 @@ export const StanceAnalytics = ({ comments, project }: StanceAnalyticsProps) => 
             );
           })}
         </div>
+        {/* 分析レポート */}
+        {isLoadingReport ? (
+          <div className="flex justify-center items-center py-8">
+            <div className="flex items-center space-x-2">
+              <svg className="animate-spin h-5 w-5 text-blue-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+              </svg>
+              <span className="text-sm text-gray-600">分析レポートを読み込み中...</span>
+            </div>
+          </div>
+        ) : analysisReport ? (
+          <div className="mb-8 bg-white p-6 rounded-lg border border-gray-200 shadow-sm">
+            <h4 className="text-lg font-medium text-gray-900 mb-4">
+              立場の分析レポート
+            </h4>
+            <div className="prose prose-sm max-w-none">
+              <ReactMarkdown className="markdown">{analysisReport.analysis}</ReactMarkdown>
+            </div>
+          </div>
+        ) : null}
       </div>
     </div>
   );

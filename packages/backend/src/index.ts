@@ -6,6 +6,7 @@ import { Comment, IComment } from './models/comment';
 import { Project, IProject, IQuestion } from './models/project';
 import { extractContent } from './services/extractionService';
 import { StanceAnalyzer } from './services/stanceAnalyzer';
+import { StanceAnalysisService } from './services/stanceAnalysisService';
 import { QuestionGenerator } from './services/questionGenerator';
 import { v4 as uuidv4 } from 'uuid';
 
@@ -39,6 +40,7 @@ app.use(express.json());
 // サービスの初期化
 const stanceAnalyzer = new StanceAnalyzer(process.env.GEMINI_API_KEY || '');
 const questionGenerator = new QuestionGenerator(process.env.GEMINI_API_KEY || '');
+const stanceAnalysisService = new StanceAnalysisService(process.env.GEMINI_API_KEY || '');
 
 // MongoDBへの接続
 mongoose.connect(process.env.MONGODB_URI || 'mongodb://localhost:27017/comment-system')
@@ -276,6 +278,64 @@ app.post('/api/projects/:projectId/comments', async (req, res) => {
     res.status(201).json(savedComment);
   } catch (error) {
     res.status(400).json({ message: 'Error creating comment', error });
+  }
+});
+
+// 質問ごとの立場の分析を取得
+app.get('/api/projects/:projectId/questions/:questionId/stance-analysis', async (req, res) => {
+  try {
+    const { projectId, questionId } = req.params;
+
+    // プロジェクトの存在確認
+    const project = await Project.findById(projectId);
+    if (!project) {
+      return res.status(404).json({ message: 'Project not found' });
+    }
+
+    // 質問の存在確認
+    const question = project.questions.find(q => q.id === questionId);
+    if (!question) {
+      return res.status(404).json({ message: 'Question not found' });
+    }
+
+    // プロジェクトの全コメントを取得
+    const comments = await Comment.find({ projectId });
+
+    // 立場ごとのコメントを集計
+    const stanceAnalysis = new Map<string, { count: number; comments: string[] }>();
+    
+    // 初期化
+    question.stances.forEach(stance => {
+      stanceAnalysis.set(stance.id, { count: 0, comments: [] });
+    });
+
+    // コメントを分類
+    comments.forEach(comment => {
+      const stance = comment.stances?.find(s => s.questionId === questionId);
+      if (stance && comment.extractedContent) {
+        const analysis = stanceAnalysis.get(stance.stanceId);
+        if (analysis) {
+          analysis.count++;
+          analysis.comments.push(comment.extractedContent);
+        }
+      }
+    });
+
+    const result = await stanceAnalysisService.analyzeStances(
+      projectId,
+      question.text,
+      comments,
+      question.stances,
+      questionId
+    );
+
+    res.json(result);
+  } catch (error) {
+    console.error('Error analyzing stances:', error);
+    res.status(500).json({
+      message: 'Error analyzing stances',
+      error: error instanceof Error ? error.message : 'Unknown error'
+    });
   }
 });
 
