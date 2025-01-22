@@ -12,6 +12,7 @@ export const ProjectPage = () => {
   const [project, setProject] = useState<Project | null>(null);
   const [comments, setComments] = useState<Comment[]>([]);
   const [error, setError] = useState<string>('');
+  const [isLoading, setIsLoading] = useState(true);
 
   const fetchProject = async () => {
     try {
@@ -21,6 +22,8 @@ export const ProjectPage = () => {
       setProject(data);
     } catch (err) {
       setError(err instanceof Error ? err.message : '予期せぬエラーが発生しました');
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -47,6 +50,7 @@ export const ProjectPage = () => {
 
       if (!response.ok) throw new Error('コメントの投稿に失敗しました');
       await fetchComments();
+      setError(''); // 成功したらエラーをクリア
     } catch (err) {
       setError(err instanceof Error ? err.message : '予期せぬエラーが発生しました');
       throw err;
@@ -55,15 +59,29 @@ export const ProjectPage = () => {
 
   useEffect(() => {
     if (projectId) {
+      setIsLoading(true);
       fetchProject();
       fetchComments();
     }
   }, [projectId]);
 
+  if (isLoading) {
+    return (
+      <div className="max-w-4xl mx-auto py-8 px-4">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500 mx-auto"></div>
+          <p className="mt-4 text-gray-500">読み込み中...</p>
+        </div>
+      </div>
+    );
+  }
+
   if (!project) {
     return (
-      <div className="text-center py-8">
-        <p className="text-gray-500">読み込み中...</p>
+      <div className="max-w-4xl mx-auto py-8 px-4">
+        <div className="text-center">
+          <p className="text-red-500">プロジェクトが見つかりませんでした</p>
+        </div>
       </div>
     );
   }
@@ -85,10 +103,13 @@ export const ProjectPage = () => {
         <h2 className="text-xl font-semibold text-gray-900 mb-4">
           新規コメント
         </h2>
-        <CommentForm onSubmit={handleSubmitComment} />
+        <CommentForm 
+          onSubmit={handleSubmitComment}
+          project={project}
+        />
       </div>
 
-      <CommentList comments={comments} />
+      <CommentList comments={comments} project={project} />
     </div>
   );
 };

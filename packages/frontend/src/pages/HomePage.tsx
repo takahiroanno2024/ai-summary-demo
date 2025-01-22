@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Project } from '../types/project';
+import { Project, Question } from '../types/project';
 import { ProjectList } from '../components/ProjectList';
 import { ProjectForm } from '../components/ProjectForm';
 
@@ -22,7 +22,12 @@ export const HomePage = () => {
     }
   };
 
-  const handleSubmitProject = async (name: string, description: string, extractionTopic: string) => {
+  const handleSubmitProject = async (
+    name: string,
+    description: string,
+    extractionTopic: string,
+    questions: Question[]
+  ) => {
     try {
       const method = editingProject ? 'PUT' : 'POST';
       const url = editingProject
@@ -34,7 +39,12 @@ export const HomePage = () => {
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ name, description, extractionTopic }),
+        body: JSON.stringify({
+          name,
+          description,
+          extractionTopic,
+          questions,
+        }),
       });
 
       if (!response.ok) throw new Error(editingProject ? 'プロジェクトの更新に失敗しました' : 'プロジェクトの作成に失敗しました');
