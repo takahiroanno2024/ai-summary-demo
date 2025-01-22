@@ -31,6 +31,20 @@ docker-compose up --build
 - バックエンド: TypeScriptがコンパイルされ、最適化されたJavaScriptを実行
 - 静的ファイルとアプリケーションコードが最適化されます
 
+## 環境変数の設定
+
+バックエンドの `.env` ファイルで以下の環境変数を設定できます：
+
+```
+# 必須の環境変数
+MONGODB_URI=mongodb://localhost:27017/comment-system  # MongoDBの接続URI
+GEMINI_API_KEY=your-api-key                          # Google Gemini APIのキー
+
+# オプションの環境変数
+PORT=3001                                            # サーバーのポート番号（デフォルト: 3001）
+PARALLEL_ANALYSIS_LIMIT=5                            # 並列処理の上限数（デフォルト: 5）
+```
+
 ## プロジェクト構成
 
 ```

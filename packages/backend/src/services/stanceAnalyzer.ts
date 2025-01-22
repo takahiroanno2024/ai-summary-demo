@@ -9,12 +9,9 @@ export interface StanceAnalysisResult {
 export class StanceAnalyzer {
   private genAI: GoogleGenerativeAI;
   private model: any;
-  private lastRequestTime: number = 0;
-  private readonly MIN_DELAY_MS: number = 1000; // 1秒の最小遅延
-
   constructor(apiKey: string) {
     this.genAI = new GoogleGenerativeAI(apiKey);
-    this.model = this.genAI.getGenerativeModel({ model: 'gemini-2.0-flash-exp' });
+    this.model = this.genAI.getGenerativeModel({ model: 'gemini-1.5-flash' });
   }
 
   private async delay(ms: number): Promise<void> {
@@ -22,15 +19,8 @@ export class StanceAnalyzer {
   }
 
   private async enforceRateLimit(): Promise<void> {
-    const now = Date.now();
-    const timeSinceLastRequest = now - this.lastRequestTime;
-    
-    if (timeSinceLastRequest < this.MIN_DELAY_MS) {
-      const delayTime = this.MIN_DELAY_MS - timeSinceLastRequest;
-      await this.delay(delayTime);
-    }
-    
-    this.lastRequestTime = Date.now();
+    // Rate limit is handled by the Gemini API client
+    return Promise.resolve();
   }
 
   private async generatePrompt(
@@ -163,8 +153,6 @@ ${comment}
         }
 
         // インデックスに基づいて初期遅延を設定（リクエストの分散）
-        await this.delay(index * (this.MIN_DELAY_MS / 2));
-
         // 新しい問いに対してのみ分析を実行
         return this.analyzeStance(comment, question.id, question.text, question.stances);
       })

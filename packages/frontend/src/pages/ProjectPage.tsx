@@ -5,6 +5,7 @@ import { Comment } from '../types/comment';
 import { CommentList } from '../components/CommentList';
 import { CommentForm } from '../components/CommentForm';
 import { StanceAnalytics } from '../components/StanceAnalytics';
+import { QuestionGenerationButton } from '../components/QuestionGenerationButton';
 
 const API_URL = 'http://localhost:3001/api';
 
@@ -133,25 +134,63 @@ export const ProjectPage = () => {
         </nav>
       </div>
 
-      {activeTab === 'comments' && (
-        <>
-          <div className="bg-white rounded-lg shadow-sm p-6 mb-8">
-            <h2 className="text-xl font-semibold text-gray-900 mb-4">
-              新規コメント
-            </h2>
-            <CommentForm
-              onSubmit={handleSubmitComment}
-              project={project}
-            />
-          </div>
+      <div className="mt-8">
+        {activeTab === 'comments' && (
+          <>
+            <div className="bg-white rounded-lg shadow-sm p-6 mb-8">
+              <h2 className="text-xl font-semibold text-gray-900 mb-4">
+                新規コメント
+              </h2>
+              <CommentForm
+                onSubmit={handleSubmitComment}
+                project={project}
+              />
+            </div>
 
-          <CommentList comments={comments} project={project} />
-        </>
-      )}
+            <CommentList comments={comments} project={project} />
+          </>
+        )}
 
-      {activeTab === 'analytics' && (
-        <StanceAnalytics comments={comments} project={project} />
-      )}
+        {activeTab === 'analytics' && (
+          <>
+            <div className="mb-6">
+              <QuestionGenerationButton
+                isGenerating={isLoading}
+                onGenerate={async () => {
+                  setIsLoading(true);
+                  try {
+                    const response = await fetch(
+                      `${API_URL}/projects/${projectId}/generate-questions`,
+                      {
+                        method: 'POST',
+                        headers: {
+                          'Content-Type': 'application/json',
+                        },
+                      }
+                    );
+
+                    if (!response.ok) {
+                      const error = await response.json();
+                      throw new Error(error.message || '質問の生成に失敗しました');
+                    }
+
+                    const updatedProject = await response.json();
+                    setProject(updatedProject);
+                    // 質問が更新されたので、コメントも再取得
+                    await fetchComments();
+                    setError('');
+                  } catch (err) {
+                    setError(err instanceof Error ? err.message : '質問の生成に失敗しました');
+                  } finally {
+                    setIsLoading(false);
+                  }
+                }}
+              />
+            </div>
+            <StanceAnalytics comments={comments} project={project} />
+          </>
+        )}
+      </div>
     </div>
   );
 };
