@@ -85,11 +85,12 @@ export const CommentList = ({ comments, project }: CommentListProps) => {
             <span className="text-sm text-gray-500 mb-2">
               {new Date(comment.createdAt).toLocaleDateString()}
             </span>
+            <p className="text-sm font-medium text-gray-500">元コメント:</p>
             <p className="text-gray-700 mb-2">{comment.content}</p>
             
             {/* 抽出結果の表示 */}
             <div className="mt-2 pt-2 border-t border-gray-100">
-              <p className="text-sm font-medium text-gray-500">抽出結果:</p>
+              <p className="text-sm font-medium text-gray-500">抽出された主張:</p>
               <p className="text-gray-700 mt-1">
                 {comment.extractedContent || '抽出結果なし'}
               </p>
