@@ -3,6 +3,7 @@ import { useParams } from 'react-router-dom';
 import { Project } from '../types/project';
 import { Comment } from '../types/comment';
 import { CommentList } from '../components/CommentList';
+import { ProjectQuestionsAndStances } from '../components/ProjectQuestionsAndStances';
 import { CommentForm } from '../components/CommentForm';
 import { StanceAnalytics } from '../components/StanceAnalytics';
 import { QuestionGenerationButton } from '../components/QuestionGenerationButton';
@@ -146,6 +147,9 @@ export const ProjectPage = () => {
               />
             </div>
 
+            <div className="bg-white rounded-lg shadow-sm p-6 mb-8">
+              <ProjectQuestionsAndStances project={project} />
+            </div>
             <CommentList comments={comments} project={project} />
           </>
         )}

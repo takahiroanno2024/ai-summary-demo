@@ -6,7 +6,7 @@ interface CommentFormProps {
   project: Project;
 }
 
-export const CommentForm = ({ onSubmit, project }: CommentFormProps) => {
+export const CommentForm = ({ onSubmit }: CommentFormProps) => {
   const [content, setContent] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -32,37 +32,12 @@ export const CommentForm = ({ onSubmit, project }: CommentFormProps) => {
           コメント
         </label>
         <div className="mt-1 space-y-2">
-          {project.questions && project.questions.length > 0 && (
-            <div className="text-sm text-gray-600 bg-gray-50 p-3 rounded-md">
-              <p className="font-medium mb-2">このプロジェクトの問いと立場:</p>
-              <ul className="list-disc pl-5 space-y-2">
-                {project.questions.map((question, index) => (
-                  <li key={question.id}>
-                    <span className="font-medium">問い {index + 1}:</span> {question.text}
-                    <div className="mt-1 flex flex-wrap gap-1">
-                      {question.stances.map(stance => (
-                        <span
-                          key={stance.id}
-                          className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800"
-                        >
-                          {stance.name}
-                        </span>
-                      ))}
-                    </div>
-                  </li>
-                ))}
-              </ul>
-              <p className="mt-3 text-sm text-gray-500">
-                ※ コメントの内容から、各問いに対する立場が自動的に分析されます
-              </p>
-            </div>
-          )}
           <textarea
             id="content"
             value={content}
             onChange={(e) => setContent(e.target.value)}
             rows={3}
-            className="block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+            className="block w-full rounded-md border border-gray-300 focus:border-blue-500 focus:ring-blue-500"
             required
           />
         </div>
