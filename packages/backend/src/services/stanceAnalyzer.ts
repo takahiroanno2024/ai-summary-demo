@@ -30,7 +30,7 @@ export class StanceAnalyzer {
   ): Promise<string> {
     const stanceOptions = stances.map(s => s.name).join('", "');
     return `
-以下のコメントに対して、質問「${questionText}」について、コメントがどの立場を取っているか分析してください。
+以下のコメントに対して、質問「${questionText}」について、コメントがどの立場を取っているか分析してください。立場が明確でなければ「立場なし」を選択してください。
 
 コメント:
 """
