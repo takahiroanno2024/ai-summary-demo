@@ -1,3 +1,5 @@
+export type CommentSourceType = 'youtube' | 'x' | 'form' | 'other';
+
 export interface CommentStance {
   questionId: string;
   stanceId: string;
@@ -11,4 +13,6 @@ export interface Comment {
   extractedContent?: string;
   stances: CommentStance[];  // 各問いに対する立場
   createdAt: string;
+  sourceType?: CommentSourceType;
+  sourceUrl?: string;
 }

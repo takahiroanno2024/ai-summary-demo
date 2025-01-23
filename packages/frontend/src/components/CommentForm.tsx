@@ -1,8 +1,9 @@
 import { useState } from 'react';
 import { Project } from '../types/project';
+import { CommentSourceType } from '../types/comment';
 
 interface CommentFormProps {
-  onSubmit: (content: string) => Promise<void>;
+  onSubmit: (data: { content: string; sourceType?: CommentSourceType; sourceUrl?: string }) => Promise<void>;
   project: Project;
 }
 
@@ -16,7 +17,10 @@ export const CommentForm = ({ onSubmit }: CommentFormProps) => {
 
     setIsSubmitting(true);
     try {
-      await onSubmit(content);
+      await onSubmit({
+        content,
+        sourceType: 'form',
+      });
       setContent('');
     } catch (error) {
       console.error('Error submitting comment:', error);
@@ -31,7 +35,7 @@ export const CommentForm = ({ onSubmit }: CommentFormProps) => {
         <label htmlFor="content" className="block text-sm font-medium text-gray-700">
           コメント
         </label>
-        <div className="mt-1 space-y-2">
+        <div className="mt-1">
           <textarea
             id="content"
             value={content}
@@ -42,6 +46,7 @@ export const CommentForm = ({ onSubmit }: CommentFormProps) => {
           />
         </div>
       </div>
+
       <button
         type="submit"
         disabled={isSubmitting}

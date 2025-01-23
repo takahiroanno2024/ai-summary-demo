@@ -2,7 +2,7 @@ import express from 'express';
 import mongoose from 'mongoose';
 import cors from 'cors';
 import dotenv from 'dotenv';
-import { Comment, IComment } from './models/comment';
+import { Comment, IComment, CommentSourceType } from './models/comment';
 import { Project, IProject, IQuestion } from './models/project';
 import { extractContent } from './services/extractionService';
 import { StanceAnalyzer } from './services/stanceAnalyzer';
@@ -249,9 +249,14 @@ app.post('/api/projects/:projectId/comments/bulk', async (req, res) => {
     const processedComments = await processInBatches(
       comments,
       PARALLEL_ANALYSIS_LIMIT,
-      async (commentContent) => {
+      async (comment) => {
+        // コメントの内容とソース情報を取得
+        const content = typeof comment === 'string' ? comment : comment.content;
+        const sourceType = typeof comment === 'string' ? 'other' : (comment.sourceType || 'other');
+        const sourceUrl = typeof comment === 'string' ? '' : (comment.sourceUrl || '');
+
         // 内容の抽出
-        const extractedContent = await extractContent(commentContent, project.extractionTopic);
+        const extractedContent = await extractContent(content, project.extractionTopic);
 
         // 抽出結果がnullの場合は立場分析をスキップ
         const stances = extractedContent === null ? [] : await stanceAnalyzer.analyzeAllStances(
@@ -265,10 +270,12 @@ app.post('/api/projects/:projectId/comments/bulk', async (req, res) => {
 
         // コメントオブジェクトの作成
         return new Comment({
-          content: commentContent,
+          content,
           projectId,
           extractedContent,
           stances,
+          sourceType: sourceType as CommentSourceType,
+          sourceUrl,
         });
       }
     );
@@ -300,7 +307,7 @@ app.get('/api/projects/:projectId/comments', async (req, res) => {
 // プロジェクトへのコメント追加
 app.post('/api/projects/:projectId/comments', async (req, res) => {
   try {
-    const { content } = req.body;
+    const { content, sourceType = 'other', sourceUrl = '' } = req.body;
     const projectId = req.params.projectId;
 
     // プロジェクトの取得
@@ -312,7 +319,7 @@ app.post('/api/projects/:projectId/comments', async (req, res) => {
     // 内容の抽出
     const extractedContent = await extractContent(content, project.extractionTopic);
 
-    // // 抽出結果がnullの場合（トピックなし、無関係、エラー）は立場分析をスキップ
+    // 抽出結果がnullの場合（トピックなし、無関係、エラー）は立場分析をスキップ
     const stances = extractedContent === null ? [] : await stanceAnalyzer.analyzeAllStances(
       extractedContent,
       project.questions.map(q => ({
@@ -321,7 +328,6 @@ app.post('/api/projects/:projectId/comments', async (req, res) => {
         stances: q.stances,
       }))
     );
-    // const stances: any[] = [];
 
     // コメントの保存
     const comment = new Comment({
@@ -329,6 +335,8 @@ app.post('/api/projects/:projectId/comments', async (req, res) => {
       projectId,
       extractedContent,
       stances,
+      sourceType: sourceType as CommentSourceType,
+      sourceUrl,
     });
     const savedComment = await comment.save();
     res.status(201).json(savedComment);

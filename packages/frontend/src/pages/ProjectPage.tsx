@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { Project } from '../types/project';
-import { Comment } from '../types/comment';
+import { Comment, CommentSourceType } from '../types/comment';
 import { CommentList } from '../components/CommentList';
 import { ProjectQuestionsAndStances } from '../components/ProjectQuestionsAndStances';
 import { CommentForm } from '../components/CommentForm';
@@ -41,14 +41,14 @@ export const ProjectPage = () => {
     }
   };
 
-  const handleSubmitComment = async (content: string) => {
+  const handleSubmitComment = async (data: { content: string; sourceType?: CommentSourceType; sourceUrl?: string }) => {
     try {
       const response = await fetch(`${API_URL}/projects/${projectId}/comments`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ content }),
+        body: JSON.stringify(data),
       });
 
       if (!response.ok) throw new Error('コメントの投稿に失敗しました');
