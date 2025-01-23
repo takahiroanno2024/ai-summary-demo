@@ -42,6 +42,7 @@ ${comment}
 注意事項:
 - "立場なし": コメントが質問に対して立場を示していない場合
 - "その他の立場": コメントが立場を示しているが、与えられた選択肢のいずれにも当てはまらない場合
+- コメントの言外の意味を読み取ろうとせず、明示的に書かれている内容のみを分析してください
 
 以下のJSON形式で回答してください:
 {
@@ -106,6 +107,15 @@ ${comment}
       
       const { stance, confidence } = await this.parseResponse(response);
       
+      // confidenceが0.8未満、またはnullの場合は結果を棄却
+      if (!confidence || confidence < 0.8) {
+        return {
+          questionId,
+          stanceId: null,
+          confidence: null,
+        };
+      }
+
       // 立場名からIDを取得
       const matchedStance = stancesWithSpecial.find(s => s.name === stance);
       
