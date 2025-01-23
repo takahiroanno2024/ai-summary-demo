@@ -10,7 +10,7 @@ interface CommentListProps {
 export const CommentList = ({ comments, project }: CommentListProps) => {
   const [hideEmpty, setHideEmpty] = useState(() => {
     const saved = localStorage.getItem('hideEmptyResults');
-    return saved ? JSON.parse(saved) : false;
+    return saved ? JSON.parse(saved) : true;
   });
 
   const [showStances, setShowStances] = useState(() => {
@@ -133,13 +133,9 @@ export const CommentList = ({ comments, project }: CommentListProps) => {
                 </div>
               )}
             </div>
-            <p className="text-sm font-medium text-gray-500">元コメント:</p>
-            <p className="text-gray-700 mt-1 mb-2">{comment.content}</p>
-            
             {/* 抽出結果の表示 */}
-            <div className="mt-2 pt-2 border-t border-gray-100">
-              <p className="text-sm font-medium text-gray-500">抽出された主張:</p>
-              <p className="text-gray-700 mt-1">
+            <div className="mt-2">
+              <p className="text-gray-700">
                 {comment.extractedContent || '抽出結果なし'}
               </p>
             </div>
@@ -147,15 +143,14 @@ export const CommentList = ({ comments, project }: CommentListProps) => {
             {/* 立場の表示 */}
             {showStances && comment.stances && comment.stances.length > 0 && (
               <div className="mt-4 pt-2 border-t border-gray-100">
-                <p className="text-sm font-medium text-gray-500 mb-2">分析された立場:</p>
-                <div className="space-y-2">
+                <div className="flex flex-wrap gap-2">
                   {comment.stances
                     .filter(stance => {
                       const question = project.questions.find(q => q.id === stance.questionId);
                       const stanceName = question?.stances.find(s => s.id === stance.stanceId)?.name;
                       return stanceName !== '立場なし';
                     })
-                    .map((stance, index) => {
+                    .map((stance) => {
                       const question = project.questions.find(q => q.id === stance.questionId);
                       if (!question) return null;
 
@@ -163,17 +158,17 @@ export const CommentList = ({ comments, project }: CommentListProps) => {
                       if (!stanceName) return null;
 
                       return (
-                        <div key={stance.questionId} className="bg-gray-50 p-3 rounded-md">
-                          <p className="text-sm text-gray-700 mb-1">
-                            <span className="font-medium">問い {index + 1}:</span> {question.text}
-                          </p>
-                          <div className="flex items-center gap-2">
-                            <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                        <div key={stance.questionId} className="group relative">
+                          <div className="flex items-center gap-2 bg-blue-50 p-2 rounded-lg">
+                            <span className="text-sm font-medium text-blue-800">
                               {stanceName}
                             </span>
                             <span className="text-xs text-gray-500">
-                              信頼度: {formatConfidence(stance.confidence)}
+                              {formatConfidence(stance.confidence)}
                             </span>
+                          </div>
+                          <div className="invisible group-hover:visible absolute z-10 w-64 p-2 mt-2 text-sm bg-gray-900 text-white rounded shadow-lg">
+                            {question.text}
                           </div>
                         </div>
                       );
