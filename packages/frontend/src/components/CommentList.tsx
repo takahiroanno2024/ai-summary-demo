@@ -163,9 +163,9 @@ export const CommentList = ({ comments, project }: CommentListProps) => {
                             <span className="text-sm font-medium text-blue-800">
                               {stanceName}
                             </span>
-                            <span className="text-xs text-gray-500">
+                            {/* <span className="text-xs text-gray-500">
                               {formatConfidence(stance.confidence)}
-                            </span>
+                            </span> */}
                           </div>
                           <div className="invisible group-hover:visible absolute z-10 w-64 p-2 mt-2 text-sm bg-gray-900 text-white rounded shadow-lg">
                             {question.text}
