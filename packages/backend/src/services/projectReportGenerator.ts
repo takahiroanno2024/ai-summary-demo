@@ -30,6 +30,12 @@ export class ProjectReportGenerator {
     this.stanceReportGenerator = new StanceReportGenerator(apiKey);
   }
 
+  private sampleComments(comments: string[], count: number = 10): string[] {
+    if (comments.length <= count) return comments;
+    const shuffled = [...comments].sort(() => 0.5 - Math.random());
+    return shuffled.slice(0, count);
+  }
+
   private async generateOverallAnalysisPrompt(
     project: IProject,
     questionAnalyses: {
@@ -43,16 +49,16 @@ export class ProjectReportGenerator {
       analysis: string;
     }[]
   ): Promise<string> {
-    return `以下のプロジェクトの質問と立場の分析結果を読み、プロジェクト全体の傾向や特徴について分析し、
-その内容を万人に伝わるように徹底的に分かりやすく丁寧に説明してください。
+    return `以下のプロジェクトの分析結果を読み、プロジェクト全体の傾向や特徴について理解し、
+その内容を万人に伝わるように分かりやすく、かつ十分に専門的で具体的になるように丁寧に説明してください。
 
 プロジェクト名: ${project.name}
 プロジェクト概要: ${project.description}
 
 ${questionAnalyses.map((qa, index) => `
-質問${index + 1}: ${qa.question}
+論点${index + 1}: ${qa.question}
 
-立場の分布:
+論点に対する立場の分布と代表的なコメント:
 ${Object.entries(qa.stanceAnalysis).map(([stance, data]) => `
 - ${stance}: ${data.count}件のコメント
 `).join('')}
@@ -62,9 +68,10 @@ ${qa.analysis}
 `).join('\n---\n')}
 
 分析のポイント:
-- 各質問の主要な論点と対立軸
+- 特に重要な論点と対立軸
+- 全体で合意できている、できていない論点
 - 質問間の関連性や共通パターン
-- 特に注目すべき意見や傾向
+- 特に注目すべき独特な意見や傾向
 - プロジェクト全体を通じて見えてくる重要な示唆
 
 コツ:

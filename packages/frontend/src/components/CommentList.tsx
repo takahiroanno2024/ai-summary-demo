@@ -42,9 +42,9 @@ export const CommentList = ({ comments, project }: CommentListProps) => {
   };
 
   // 信頼度を表示用に変換する関数
-  const formatConfidence = (confidence: number) => {
-    return `${Math.round(confidence * 100)}%`;
-  };
+  // const formatConfidence = (confidence: number) => {
+  //   return `${Math.round(confidence * 100)}%`;
+  // };
 
   // データソースタイプに応じたスタイルを取得する関数
   const getSourceTypeStyle = (sourceType: CommentSourceType) => {
