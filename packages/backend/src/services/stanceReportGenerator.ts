@@ -14,13 +14,13 @@ export interface StanceAnalysisResult {
   analysis: string;
 }
 
-export class StanceAnalysisService {
+export class StanceReportGenerator {
   private genAI: GoogleGenerativeAI;
   private model: any;
 
   constructor(apiKey: string) {
     this.genAI = new GoogleGenerativeAI(apiKey);
-    this.model = this.genAI.getGenerativeModel({ model: 'gemini-1.5-flash' });
+    this.model = this.genAI.getGenerativeModel({ model: 'gemini-1.5-pro' });
   }
 
   private async generateAnalysisPrompt(

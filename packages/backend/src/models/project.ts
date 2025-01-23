@@ -12,6 +12,7 @@ export interface IQuestion {
 }
 
 export interface IProject {
+  _id?: mongoose.Types.ObjectId;
   name: string;
   description?: string;
   extractionTopic?: string;

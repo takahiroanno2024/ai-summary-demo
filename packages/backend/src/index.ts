@@ -6,7 +6,8 @@ import { Comment, IComment, CommentSourceType } from './models/comment';
 import { Project, IProject, IQuestion } from './models/project';
 import { extractContent } from './services/extractionService';
 import { StanceAnalyzer } from './services/stanceAnalyzer';
-import { StanceAnalysisService } from './services/stanceAnalysisService';
+import { StanceReportGenerator } from './services/stanceReportGenerator';
+import { ProjectReportGenerator } from './services/projectReportGenerator';
 import { QuestionGenerator } from './services/questionGenerator';
 import { v4 as uuidv4 } from 'uuid';
 
@@ -40,7 +41,8 @@ app.use(express.json());
 // サービスの初期化
 const stanceAnalyzer = new StanceAnalyzer(process.env.GEMINI_API_KEY || '');
 const questionGenerator = new QuestionGenerator(process.env.GEMINI_API_KEY || '');
-const stanceAnalysisService = new StanceAnalysisService(process.env.GEMINI_API_KEY || '');
+const stanceAnalysisService = new StanceReportGenerator(process.env.GEMINI_API_KEY || '');
+const projectReportGenerator = new ProjectReportGenerator(process.env.GEMINI_API_KEY || '');
 
 // MongoDBへの接続
 mongoose.connect(process.env.MONGODB_URI || 'mongodb://localhost:27017/comment-system')
@@ -404,6 +406,36 @@ app.get('/api/projects/:projectId/questions/:questionId/stance-analysis', async 
 });
 
 // サーバーの起動
+// プロジェクト全体の分析レポートを生成
+app.get('/api/projects/:projectId/analysis', async (req, res) => {
+  try {
+    const projectId = req.params.projectId;
+
+    // プロジェクトの取得
+    const project = await Project.findById(projectId);
+    if (!project) {
+      return res.status(404).json({ message: 'Project not found' });
+    }
+
+    // プロジェクトの全コメントを取得
+    const comments = await Comment.find({ projectId });
+
+    // プロジェクト全体の分析を生成
+    const analysis = await projectReportGenerator.generateProjectReport(
+      project,
+      comments
+    );
+
+    res.json(analysis);
+  } catch (error) {
+    console.error('Error generating project analysis:', error);
+    res.status(500).json({
+      message: 'Error generating project analysis',
+      error: error instanceof Error ? error.message : 'Unknown error'
+    });
+  }
+});
+
 app.listen(port, () => {
   console.log(`Server running on port ${port}`);
 });

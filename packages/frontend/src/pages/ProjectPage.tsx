@@ -6,6 +6,7 @@ import { CommentList } from '../components/CommentList';
 import { ProjectQuestionsAndStances } from '../components/ProjectQuestionsAndStances';
 import { CommentForm } from '../components/CommentForm';
 import { StanceAnalytics } from '../components/StanceAnalytics';
+import { ProjectAnalytics } from '../components/ProjectAnalytics';
 import { QuestionGenerationButton } from '../components/QuestionGenerationButton';
 import { API_URL } from '../config/api';
 
@@ -15,7 +16,7 @@ export const ProjectPage = () => {
   const [comments, setComments] = useState<Comment[]>([]);
   const [error, setError] = useState<string>('');
   const [isLoading, setIsLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState<'comments' | 'analytics'>('comments');
+  const [activeTab, setActiveTab] = useState<'comments' | 'analytics' | 'overall'>('comments');
 
   const fetchProject = async () => {
     try {
@@ -131,6 +132,19 @@ export const ProjectPage = () => {
           >
             立場の分析
           </button>
+          <button
+            onClick={() => setActiveTab('overall')}
+            className={`
+              whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm
+              ${
+                activeTab === 'overall'
+                  ? 'border-blue-500 text-blue-600'
+                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+              }
+            `}
+          >
+            全体分析
+          </button>
         </nav>
       </div>
 
@@ -192,6 +206,10 @@ export const ProjectPage = () => {
             </div>
             <StanceAnalytics comments={comments} project={project} />
           </>
+        )}
+
+        {activeTab === 'overall' && (
+          <ProjectAnalytics project={project} />
         )}
       </div>
     </div>
