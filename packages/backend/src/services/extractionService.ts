@@ -19,7 +19,7 @@ Comment to analyze:
 ${content}
 """
 
-Please respond with either "RELEVANT" or "NOT_RELEVANT". Consider a comment relevant if it expresses any opinion, argument, or insight related to the topic, even if the connection is indirect.`;
+Please respond with either "RELEVANT" or "NOT_RELEVANT". Consider a comment relevant if it expresses any opinion or argument related to the topic.`;
 
     console.log('Relevance Check LLM Input:', prompt);
 
@@ -65,7 +65,7 @@ export async function extractContent(content: string, extractionTopic?: string):
   私はAIが仕事を奪うことを懸念しています。具体的な例として、友人のいとこが自動化によって仕事を失ったケースがあります。
   """
 
-  では、同じレベルの明確さと簡潔さで「${extractionTopic}」に関するコメントを処理してください。
+  では、同じレベルの明確さと簡潔さで「${extractionTopic}」に関するコメントから主張を抽出してください。
   """
   ${content}
   """
