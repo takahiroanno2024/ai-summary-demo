@@ -28,30 +28,30 @@ export class StanceReportGenerator {
     stanceAnalysis: Map<string, { count: number; comments: string[] }>,
     stanceNames: Map<string, string>
   ): Promise<string> {
-    return `以下の質問に対する様々な立場とそれぞれの意見を読み、各立場の意見の傾向、主張の根拠、そして立場間の関係性について分析し、
-    その内容を万人に伝わるように徹底的に分かりやすく丁寧に説明してください。
+    return `以下の論点に対する様々な立場とそれぞれの意見を読み、各立場の意見の傾向、主張の根拠、そして立場間の関係性について分析し、
+    その内容を万人に伝わるように徹底的に分かりやすく、かつ十分に専門的で具体的になるように丁寧に説明してください。
 
-質問: ${questionText}
+  論点: ${questionText}
 
-${Array.from(stanceAnalysis.entries()).map(([stanceId, data]) => {
-  const stanceName = stanceNames.get(stanceId) || 'Unknown';
-  return `
-立場: ${stanceName}
-コメント数: ${data.count}
-コメント内容:
-${data.comments.join('\n')}
-`;
-}).join('\n')}
+  ${Array.from(stanceAnalysis.entries()).filter(([_, data]) => data.count > 0).map(([stanceId, data]) => {
+    const stanceName = stanceNames.get(stanceId) || 'Unknown';
+    return `
+  立場: ${stanceName}
+  コメント数: ${data.count}
+  コメント内容:
+  ${data.comments.join('\n')}
+  `;
+  }).join('\n')}
 
-分析のポイント:
-- 各立場の主張の要点
-- 異なる立場間の対立点や共通点
-- 特徴的な意見や興味深い視点
+  分析のポイント:
+  - 各立場の主張の要点
+  - 異なる立場間の対立点や共通点
+  - 特徴的な意見や興味深い視点
 
-コツ:
-- Markdown記法の見出し、箇条書き、太字などを積極的に利用し、徹底的に読みやすくしてください。
-- パッと読んで誰でも理解できるように簡潔にまとめてください。
-`;
+  コツ:
+  - Markdown記法の見出し、箇条書き、太字などを積極的に利用し、徹底的に読みやすくしてください。
+  - パッと読んで誰でも理解できるように簡潔にまとめてください。
+  `;
   }
 
   async getAnalysis(
@@ -69,16 +69,19 @@ ${data.comments.join('\n')}
     questionText: string,
     comments: IComment[],
     stances: { id: string; name: string }[],
-    questionId: string
+    questionId: string,
+    forceRegenerate: boolean = false
   ): Promise<StanceAnalysisResult> {
-    // まず、既存の分析結果を確認
-    const existingAnalysis = await this.getAnalysis(projectId, questionId);
-    if (existingAnalysis) {
-      return {
-        question: questionText,
-        stanceAnalysis: existingAnalysis.stanceAnalysis,
-        analysis: existingAnalysis.analysis
-      };
+    // 既存の分析結果を確認（強制再生成でない場合のみ）
+    if (!forceRegenerate) {
+      const existingAnalysis = await this.getAnalysis(projectId, questionId);
+      if (existingAnalysis) {
+        return {
+          question: questionText,
+          stanceAnalysis: existingAnalysis.stanceAnalysis,
+          analysis: existingAnalysis.analysis
+        };
+      }
     }
 
     // 立場ごとのコメントを集計

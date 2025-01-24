@@ -457,12 +457,15 @@ app.get('/api/projects/:projectId/questions/:questionId/stance-analysis', async 
       }
     });
 
+    const forceRegenerate = req.query.forceRegenerate === 'true';
+    
     const result = await stanceAnalysisService.analyzeStances(
       projectId,
       question.text,
       comments,
       question.stances,
-      questionId
+      questionId,
+      forceRegenerate
     );
 
     res.json(result);
