@@ -3,6 +3,7 @@ import { Comment } from '../types/comment';
 import { Project, Question, StanceAnalysisReport } from '../types/project';
 import { PieChart, Pie, Cell, ResponsiveContainer, Legend, Tooltip } from 'recharts';
 import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
 
 interface StanceAnalyticsProps {
   comments: Comment[];
@@ -232,7 +233,7 @@ export const StanceAnalytics = ({ comments, project }: StanceAnalyticsProps) => 
               立場の分析レポート
             </h4>
             <div className="prose prose-sm max-w-none">
-              <ReactMarkdown className="markdown">{analysisReport.analysis}</ReactMarkdown>
+              <ReactMarkdown remarkPlugins={[remarkGfm]} className="markdown">{analysisReport.analysis}</ReactMarkdown>
             </div>
           </div>
         ) : null}

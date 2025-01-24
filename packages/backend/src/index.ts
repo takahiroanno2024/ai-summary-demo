@@ -27,7 +27,7 @@ async function processInBatches<T, R>(
 }
 
 // 環境変数から並列処理の上限を取得（デフォルト値: 5）
-const PARALLEL_ANALYSIS_LIMIT = parseInt(process.env.PARALLEL_ANALYSIS_LIMIT || '5', 10);
+const PARALLEL_ANALYSIS_LIMIT = parseInt(process.env.PARALLEL_ANALYSIS_LIMIT || '3', 10);
 
 dotenv.config();
 
