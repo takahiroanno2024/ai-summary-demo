@@ -509,6 +509,66 @@ app.get('/api/projects/:projectId/analysis', async (req, res) => {
   }
 });
 
+// プロジェクトデータをCSVとしてエクスポート
+app.get('/api/projects/:projectId/export-csv', async (req, res) => {
+  try {
+    const projectId = req.params.projectId;
+
+    // プロジェクトの取得
+    const project = await Project.findById(projectId);
+    if (!project) {
+      return res.status(404).json({ message: 'Project not found' });
+    }
+
+    // プロジェクトの全コメントを取得
+    const comments = await Comment.find({ projectId }).sort({ createdAt: 1 });
+
+    // CSVヘッダーの作成
+    const headers = ['CommentID', 'Content', 'ExtractedContent', 'Source', 'URL'];
+    project.questions.forEach(question => {
+      headers.push(`Q${question.id}(${question.text})`);
+    });
+
+    // CSVデータの作成
+    const csvRows = [headers.join(',')];
+
+    // 各コメントについて処理
+    comments.forEach(comment => {
+      const row = [
+        comment._id.toString(),
+        `"${comment.content.replace(/"/g, '""')}"`,
+        comment.extractedContent ? `"${comment.extractedContent.replace(/"/g, '""')}"` : '',
+        comment.sourceType || '',
+        comment.sourceUrl || ''
+      ];
+
+      // 各質問に対する立場を追加
+      project.questions.forEach(question => {
+        const stance = comment.stances.find(s => s.questionId === question.id);
+        if (stance) {
+          const stanceObj = question.stances.find(s => s.id === stance.stanceId);
+          row.push(stanceObj ? stanceObj.name : '');
+        } else {
+          row.push('');
+        }
+      });
+
+      csvRows.push(row.join(','));
+    });
+
+    // CSVファイルとしてレスポンスを返す
+    res.setHeader('Content-Type', 'text/csv');
+    res.setHeader('Content-Disposition', `attachment; filename=project-${projectId}-export.csv`);
+    res.send(csvRows.join('\n'));
+  } catch (error) {
+    console.error('Error exporting project data:', error);
+    res.status(500).json({
+      message: 'Error exporting project data',
+      error: error instanceof Error ? error.message : 'Unknown error'
+    });
+  }
+});
+
 app.listen(port, () => {
   console.log(`Server running on port ${port}`);
 });
