@@ -12,22 +12,47 @@ import { QuestionGenerator } from './services/questionGenerator';
 import { v4 as uuidv4 } from 'uuid';
 
 // 並列処理を制御するユーティリティ関数
+// 処理間の遅延を作成するユーティリティ関数
+const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
+
 async function processInBatches<T, R>(
   items: T[],
   batchSize: number,
-  processor: (item: T) => Promise<R>
+  processor: (item: T) => Promise<R>,
+  delayMs: number = 1000 // デフォルトで1秒の遅延
 ): Promise<R[]> {
   const results: R[] = [];
+  const totalBatches = Math.ceil(items.length / batchSize);
+  console.log(`Starting batch processing of ${items.length} items in ${totalBatches} batches of size ${batchSize}`);
+  
   for (let i = 0; i < items.length; i += batchSize) {
+    const currentBatch = Math.floor(i / batchSize) + 1;
     const batch = items.slice(i, i + batchSize);
-    const batchResults = await Promise.all(batch.map(processor));
-    results.push(...batchResults);
+    console.log(`Processing batch ${currentBatch}/${totalBatches} (${batch.length} items)`);
+    
+    // バッチ内の各アイテムを順次処理（並列処理をやめて逐次処理に変更）
+    for (let j = 0; j < batch.length; j++) {
+      const item = batch[j];
+      const result = await processor(item);
+      console.log(`Completed item ${i + j + 1}/${items.length}`);
+      results.push(result);
+      
+      // 最後のアイテム以外は遅延を入れる
+      if (i + j < items.length - 1) {
+        console.log(`Waiting ${delayMs}ms before processing next item...`);
+        await delay(delayMs);
+      }
+    }
+    
+    console.log(`Completed batch ${currentBatch}/${totalBatches}`);
   }
+  
+  console.log('Batch processing completed');
   return results;
 }
 
 // 環境変数から並列処理の上限を取得（デフォルト値: 5）
-const PARALLEL_ANALYSIS_LIMIT = parseInt(process.env.PARALLEL_ANALYSIS_LIMIT || '3', 10);
+const PARALLEL_ANALYSIS_LIMIT = parseInt(process.env.PARALLEL_ANALYSIS_LIMIT || '1', 10);
 
 dotenv.config();
 
@@ -128,20 +153,24 @@ app.put('/api/projects/:projectId', async (req, res) => {
 
     // 論点が変更された場合、全コメントの立場を並列で再分析
     if (hasQuestionsChanged && questions) {
+      console.log(`Questions changed for project ${projectId}. Starting comment reanalysis...`);
       const comments = await Comment.find({ projectId });
       const commentsToAnalyze = comments.filter(comment => comment.extractedContent);
+      console.log(`Found ${commentsToAnalyze.length} comments with extracted content to analyze`);
       
       const mappedQuestions = questions.map((q: IQuestion) => ({
         id: q.id,
         text: q.text,
         stances: q.stances,
       }));
+      console.log(`Mapped ${mappedQuestions.length} questions for analysis`);
 
       // コメントを並列で処理
       await processInBatches(
         commentsToAnalyze,
         PARALLEL_ANALYSIS_LIMIT,
         async (comment) => {
+          console.log(`Analyzing stances for comment ${comment._id}`);
           const newStances = await stanceAnalyzer.analyzeAllStances(
             comment.extractedContent!,
             mappedQuestions,
@@ -149,8 +178,11 @@ app.put('/api/projects/:projectId', async (req, res) => {
           );
           
           await Comment.findByIdAndUpdate(comment._id, { stances: newStances });
-        }
+          console.log(`Updated stances for comment ${comment._id}`);
+        },
+        2000 // Gemini APIの呼び出しを含むため2秒の遅延を設定
       );
+      console.log(`Completed reanalysis of all comments for project ${projectId}`);
     }
 
     res.json(updatedProject);
@@ -211,26 +243,34 @@ app.post('/api/projects/:projectId/generate-questions', async (req, res) => {
     );
 
     // 全コメントの立場を並列で再分析
+    console.log(`Starting stance reanalysis after question generation for project ${projectId}`);
     const commentsToAnalyze = comments.filter(comment => comment.extractedContent);
+    console.log(`Found ${commentsToAnalyze.length} comments with extracted content to analyze`);
+    
     const mappedQuestions = formattedQuestions.map(q => ({
       id: q.id,
       text: q.text,
       stances: q.stances,
     }));
+    console.log(`Mapped ${mappedQuestions.length} newly generated questions for analysis`);
 
     // コメントを並列で処理
     await processInBatches(
       commentsToAnalyze,
       PARALLEL_ANALYSIS_LIMIT,
       async (comment) => {
+        console.log(`Analyzing stances for comment ${comment._id} with new questions`);
         const newStances = await stanceAnalyzer.analyzeAllStances(
           comment.extractedContent!,
           mappedQuestions
         );
         
         await Comment.findByIdAndUpdate(comment._id, { stances: newStances });
-      }
+        console.log(`Updated stances for comment ${comment._id} with new questions`);
+      },
+      2000 // Gemini APIの呼び出しを含むため2秒の遅延を設定
     );
+    console.log(`Completed stance reanalysis for all comments in project ${projectId}`);
 
     res.json(updatedProject);
   } catch (error) {
@@ -259,6 +299,8 @@ app.post('/api/projects/:projectId/comments/bulk', async (req, res) => {
       return res.status(404).json({ message: 'Project not found' });
     }
 
+    console.log(`Starting bulk import of ${comments.length} comments for project ${projectId}`);
+    
     // コメントを並列で処理
     const processedComments = await processInBatches(
       comments,
@@ -268,21 +310,34 @@ app.post('/api/projects/:projectId/comments/bulk', async (req, res) => {
         const content = typeof comment === 'string' ? comment : comment.content;
         const sourceType = typeof comment === 'string' ? 'other' : (comment.sourceType || 'other');
         const sourceUrl = typeof comment === 'string' ? '' : (comment.sourceUrl || '');
+        console.log(`Processing comment: ${content.substring(0, 50)}...`);
 
         // 内容の抽出
+        console.log('Extracting content based on topic...');
         const extractedContent = await extractContent(content, project.extractionTopic);
+        if (extractedContent === null) {
+          console.log('No relevant content extracted for this comment');
+        } else {
+          console.log(`Extracted content: ${extractedContent.substring(0, 50)}...`);
+        }
 
         // 抽出結果がnullの場合は立場分析をスキップ
-        const stances = extractedContent === null ? [] : await stanceAnalyzer.analyzeAllStances(
-          extractedContent,
-          project.questions.map(q => ({
-            id: q.id,
-            text: q.text,
-            stances: q.stances,
-          }))
-        );
+        let stances: { questionId: string; stanceId: string | null }[] = [];
+        if (extractedContent !== null) {
+          console.log('Analyzing stances for extracted content...');
+          stances = await stanceAnalyzer.analyzeAllStances(
+            extractedContent,
+            project.questions.map(q => ({
+              id: q.id,
+              text: q.text,
+              stances: q.stances,
+            }))
+          );
+          console.log(`Stance analysis completed with ${stances.length} stances`);
+        }
 
         // コメントオブジェクトの作成
+        console.log('Creating comment object...');
         return new Comment({
           content,
           projectId,
@@ -291,8 +346,11 @@ app.post('/api/projects/:projectId/comments/bulk', async (req, res) => {
           sourceType: sourceType as CommentSourceType,
           sourceUrl,
         });
-      }
+      },
+      2000 // Gemini APIの呼び出しを含むため2秒の遅延を設定
     );
+    
+    console.log(`Completed processing ${processedComments.length} comments`);
 
     // 全コメントを一括保存
     const savedComments = await Comment.insertMany(processedComments);

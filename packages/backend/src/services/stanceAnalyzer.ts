@@ -30,7 +30,7 @@ export class StanceAnalyzer {
   ): Promise<string> {
     const stanceOptions = stances.map(s => s.name).join('", "');
     return `
-以下のコメントに対して、質問「${questionText}」について、コメントがどの立場を取っているか分析してください。立場が明確でなければ「立場なし」を選択してください。
+以下のコメントに対して、論点「${questionText}」について、コメントがどの立場を取っているか分析してください。立場が明確でなければ「立場なし」を選択してください。
 
 コメント:
 """
@@ -40,13 +40,13 @@ ${comment}
 可能な立場: "${stanceOptions}"
 
 注意事項:
-- "立場なし": コメントが質問に対して立場を示していない場合
-- "その他の立場": コメントが立場を示しているが、与えられた選択肢のいずれにも当てはまらない場合
+- "立場なし": コメントが論点に対して明確な立場を示していない場合
+- "その他の立場": コメントが論点に対して明確な立場を示しているが、与えられた選択肢のいずれにも当てはまらない場合
 - コメントの言外の意味を読み取ろうとせず、明示的に書かれている内容のみを分析してください
 
 以下のJSON形式で回答してください:
 {
-  "reasoning": "判断理由の説明"
+  "reasoning": "考察"
   "stance": "立場の名前",
   "confidence": 信頼度（0から1の数値）,
 }
@@ -93,59 +93,88 @@ ${comment}
     questionText: string,
     stances: { id: string; name: string }[]
   ): Promise<StanceAnalysisResult> {
-    try {
-      // 特殊な立場を確実に含める
-      const stancesWithSpecial = this.ensureSpecialStances(stances);
-      
-      const prompt = await this.generatePrompt(comment, questionText, stancesWithSpecial);
-      console.log('Generated Prompt:', prompt);
-      
-      await this.enforceRateLimit();
-      const result = await this.model.generateContent(prompt);
-      const response = result.response.text();
-      console.log('LLM Response:', response);
-      
-      const { stance, confidence } = await this.parseResponse(response);
-      
-      // confidenceが0.8未満、またはnullの場合は結果を棄却
-      if (!confidence || confidence < 0.8) {
-        return {
-          questionId,
-          stanceId: null,
-          confidence: null,
-        };
-      }
+    let retryCount = 0;
+    const maxRetries = 2;
 
-      // 立場名からIDを取得
-      const matchedStance = stancesWithSpecial.find(s => s.name === stance);
-      
-      if (!matchedStance) {
-        // マッチする立場が見つからない場合はnullを返す
+    while (retryCount <= maxRetries) {
+      try {
+        // 特殊な立場を確実に含める
+        const stancesWithSpecial = this.ensureSpecialStances(stances);
+        
+        const prompt = await this.generatePrompt(comment, questionText, stancesWithSpecial);
+        console.log('Generated Prompt:', prompt);
+        
+        await this.enforceRateLimit();
+        const result = await this.model.generateContent(prompt);
+        const response = result.response.text();
+        console.log('LLM Response:', response);
+        
+        const { stance, confidence } = await this.parseResponse(response);
+        
+        // confidenceが0.8未満、またはnullの場合は結果を棄却
+        if (!confidence || confidence < 0.8) {
+          return {
+            questionId,
+            stanceId: null,
+            confidence: null,
+          };
+        }
+
+        // 立場名からIDを取得
+        const matchedStance = stancesWithSpecial.find(s => s.name === stance);
+        
+        if (!matchedStance) {
+          // マッチする立場が見つからない場合はnullを返す
+          return {
+            questionId,
+            stanceId: null,
+            confidence: null,
+          };
+        }
+        
+        return {
+          questionId,
+          stanceId: matchedStance.id,
+          confidence,
+        };
+      } catch (error: any) {
+        console.error('Stance analysis failed:', error);
+        
+        // 503エラーの場合、かつリトライ回数が上限未満の場合は再試行
+        if (error?.status === 503 && retryCount < maxRetries) {
+          console.log('Received 503 error, retrying...');
+          retryCount++;
+          // 再試行前に少し待機
+          await this.delay(1000);
+          continue;
+        }
+        
+        // リトライ回数が上限に達した場合、またはその他のエラーの場合
+        if (error?.status === 503) {
+          console.log('Giving up after retry: 503 error persists');
+        } else {
+          console.log('Giving up: encountered error:', error?.status || 'unknown error');
+        }
+        
         return {
           questionId,
           stanceId: null,
           confidence: null,
         };
       }
-      
-      return {
-        questionId,
-        stanceId: matchedStance.id,
-        confidence,
-      };
-    } catch (error) {
-      console.error('Stance analysis failed:', error);
-      return {
-        questionId,
-        stanceId: null,
-        confidence: null,
-      };
     }
+
+    // このコードは実行されないはずですが、TypeScriptの型チェックを満たすために必要
+    return {
+      questionId,
+      stanceId: null,
+      confidence: null,
+    };
   }
 
   async analyzeAllStances(
     comment: string,
-    questions: { id: string; text: string; stances: { id: string; name: string }[] }[],
+    questions: Array<{ id: string; text: string; stances: Array<{ id: string; name: string }> }>,
     existingStances: StanceAnalysisResult[] = []
   ): Promise<StanceAnalysisResult[]> {
     // 新しい論点と既存の分析結果をマッピング
@@ -155,14 +184,13 @@ ${comment}
 
     // 論点.allを維持）
     const results = await Promise.all(
-      questions.map(async (question, index) => {
+      questions.map(async question => {
         // 既存の分析結果があれば再利用
         const existingStance = existingStanceMap.get(question.id);
         if (existingStance) {
           return existingStance;
         }
 
-        // インデックスに基づいて初期遅延を設定（リクエストの分散）
         // 新しい論点に対してのみ分析を実行
         return this.analyzeStance(comment, question.id, question.text, question.stances);
       })
