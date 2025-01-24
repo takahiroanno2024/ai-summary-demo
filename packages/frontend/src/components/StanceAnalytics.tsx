@@ -4,6 +4,7 @@ import { Project, Question, StanceAnalysisReport } from '../types/project';
 import { PieChart, Pie, Cell, ResponsiveContainer, Legend, Tooltip } from 'recharts';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
+import { API_URL } from '../config/api';
 
 interface StanceAnalyticsProps {
   comments: Comment[];
@@ -46,6 +47,14 @@ export const StanceAnalytics = ({ comments, project }: StanceAnalyticsProps) => 
   );
   const [analysisReport, setAnalysisReport] = useState<StanceAnalysisReport | null>(null);
   const [isLoadingReport, setIsLoadingReport] = useState(false);
+  const [expandedStances, setExpandedStances] = useState<Record<string, boolean>>({});
+
+  const toggleStanceExpand = (stanceId: string) => {
+    setExpandedStances(prev => ({
+      ...prev,
+      [stanceId]: !prev[stanceId]
+    }));
+  };
 
   const fetchAnalysisReport = useCallback(async () => {
     if (!selectedQuestion) return;
@@ -53,7 +62,7 @@ export const StanceAnalytics = ({ comments, project }: StanceAnalyticsProps) => 
     try {
       setIsLoadingReport(true);
       const response = await fetch(
-        `/api/projects/${project._id}/questions/${selectedQuestion.id}/stance-analysis`
+        `${API_URL}/projects/${project._id}/questions/${selectedQuestion.id}/stance-analysis`
       );
       
       if (!response.ok) {
@@ -185,7 +194,7 @@ export const StanceAnalytics = ({ comments, project }: StanceAnalyticsProps) => 
         </div>
 
         {/* コメントリスト */}
-        <div className="space-y-3">
+        <div className="space-y-3 my-4">
           {Object.entries(stanceStats).map(([stanceId, stats]) => {
             if (stats.count === 0) return null;
             
@@ -200,17 +209,51 @@ export const StanceAnalytics = ({ comments, project }: StanceAnalyticsProps) => 
                   </span>
                 </div>
 
-                <div className="grid grid-cols-1 gap-1">
-                  {stats.comments.map((comment) => (
-                    comment.extractedContent && (
-                      <div
-                        key={comment._id}
-                        className="bg-white px-3 py-2 text-sm border-l-4 border-blue-400"
+                <div className="relative">
+                  <div className="grid grid-cols-1 gap-1">
+                    {stats.comments
+                      .slice(0, expandedStances[stanceId] ? undefined : 3)
+                      .map((comment, index) => (
+                        comment.extractedContent && (
+                          <div
+                            key={comment._id}
+                            className={`
+                              bg-white px-3 py-2 text-sm border-l-4 border-blue-400
+                              ${!expandedStances[stanceId] && index === 2 ? 'relative' : ''}
+                            `}
+                          >
+                            {comment.extractedContent}
+                            {!expandedStances[stanceId] && index === 2 && stats.comments.length > 3 && (
+                              <div className="absolute inset-0 bg-gradient-to-b from-transparent via-white/60 to-white" />
+                            )}
+                          </div>
+                        )
+                      ))}
+                  </div>
+                  {stats.comments.length > 3 && (
+                    <div className="mt-2 text-center">
+                      <button
+                        onClick={() => toggleStanceExpand(stanceId)}
+                        className="inline-flex items-center gap-1 text-sm text-blue-600 hover:text-blue-700 font-medium"
                       >
-                        {comment.extractedContent}
-                      </div>
-                    )
-                  ))}
+                        {!expandedStances[stanceId] ? (
+                          <>
+                            残り{stats.comments.length - 3}件のコメントを表示
+                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7" />
+                            </svg>
+                          </>
+                        ) : (
+                          <>
+                            コメントを折りたたむ
+                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 15l7-7 7 7" />
+                            </svg>
+                          </>
+                        )}
+                      </button>
+                    </div>
+                  )}
                 </div>
               </div>
             );

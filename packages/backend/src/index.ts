@@ -56,7 +56,19 @@ mongoose.connect(process.env.MONGODB_URI || 'mongodb://localhost:27017/comment-s
 app.get('/api/projects', async (req, res) => {
   try {
     const projects = await Project.find().sort({ createdAt: -1 });
-    res.json(projects);
+    
+    // 各プロジェクトのコメント件数を取得
+    const projectsWithCommentCount = await Promise.all(
+      projects.map(async (project) => {
+        const commentCount = await Comment.countDocuments({ projectId: project._id });
+        return {
+          ...project.toObject(),
+          commentCount
+        };
+      })
+    );
+    
+    res.json(projectsWithCommentCount);
   } catch (error) {
     res.status(500).json({ message: 'Error fetching projects', error });
   }

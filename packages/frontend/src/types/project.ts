@@ -27,4 +27,5 @@ export interface Project {
   extractionTopic?: string;
   questions: Question[];
   createdAt: string;
+  commentCount: number;
 }
