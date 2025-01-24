@@ -188,16 +188,16 @@ export const ProjectPage = () => {
 
                     if (!response.ok) {
                       const error = await response.json();
-                      throw new Error(error.message || '質問の生成に失敗しました');
+                      throw new Error(error.message || '論点の生成に失敗しました');
                     }
 
                     const updatedProject = await response.json();
                     setProject(updatedProject);
-                    // 質問が更新されたので、コメントも再取得
+                    // 論点が更新されたので、コメントも再取得
                     await fetchComments();
                     setError('');
                   } catch (err) {
-                    setError(err instanceof Error ? err.message : '質問の生成に失敗しました');
+                    setError(err instanceof Error ? err.message : '論点の生成に失敗しました');
                   } finally {
                     setIsLoading(false);
                   }

@@ -79,7 +79,7 @@ export const StanceAnalytics = ({ comments, project }: StanceAnalyticsProps) => 
     }
   }, [project._id, selectedQuestion]);
 
-  // 質問が変更されたら自動的に分析結果を取得
+  // 論点が変更されたら自動的に分析結果を取得
   useEffect(() => {
     if (selectedQuestion) {
       fetchAnalysisReport();
@@ -143,7 +143,7 @@ export const StanceAnalytics = ({ comments, project }: StanceAnalyticsProps) => 
               key={question.id}
               onClick={() => {
                 setSelectedQuestion(question);
-                setAnalysisReport(null); // 質問が変更されたらレポートをリセット
+                setAnalysisReport(null); // 論点が変更されたらレポートをリセット
               }}
               className={`
                 whitespace-nowrap py-4 px-4 border-b-2 font-medium text-sm

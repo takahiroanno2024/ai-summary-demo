@@ -8,7 +8,7 @@ export const QuestionGenerationButton: React.FC<QuestionGenerationButtonProps> =
   onGenerate,
 }) => {
   const handleClick = () => {
-    if (!confirm('現在の質問と立場をすべて削除して、新しい質問と立場を生成しますか？')) {
+    if (!confirm('現在の論点と立場をすべて削除して、新しい論点と立場を生成しますか？')) {
       return;
     }
     onGenerate();
@@ -45,7 +45,7 @@ export const QuestionGenerationButton: React.FC<QuestionGenerationButtonProps> =
           生成中...
         </span>
       ) : (
-        '質問をリセットして再生成する'
+        '論点をリセットして再生成する'
       )}
     </button>
   );
