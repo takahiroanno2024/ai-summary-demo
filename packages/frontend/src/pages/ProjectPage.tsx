@@ -130,7 +130,7 @@ export const ProjectPage = () => {
               }
             `}
           >
-            立場の分析
+            論点ごとの分析
           </button>
           <button
             onClick={() => setActiveTab('overall')}
@@ -143,7 +143,7 @@ export const ProjectPage = () => {
               }
             `}
           >
-            全体分析
+            全体の分析
           </button>
         </nav>
       </div>
