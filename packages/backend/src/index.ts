@@ -180,7 +180,7 @@ app.put('/api/projects/:projectId', async (req, res) => {
           await Comment.findByIdAndUpdate(comment._id, { stances: newStances });
           console.log(`Updated stances for comment ${comment._id}`);
         },
-        2000 // Gemini APIの呼び出しを含むため2秒の遅延を設定
+        0 // Gemini APIの呼び出しを含むため2秒の遅延を設定
       );
       console.log(`Completed reanalysis of all comments for project ${projectId}`);
     }
@@ -268,7 +268,7 @@ app.post('/api/projects/:projectId/generate-questions', async (req, res) => {
         await Comment.findByIdAndUpdate(comment._id, { stances: newStances });
         console.log(`Updated stances for comment ${comment._id} with new questions`);
       },
-      2000 // Gemini APIの呼び出しを含むため2秒の遅延を設定
+      0 // Gemini APIの呼び出しを含むため2秒の遅延を設定
     );
     console.log(`Completed stance reanalysis for all comments in project ${projectId}`);
 
@@ -347,7 +347,7 @@ app.post('/api/projects/:projectId/comments/bulk', async (req, res) => {
           sourceUrl,
         });
       },
-      2000 // Gemini APIの呼び出しを含むため2秒の遅延を設定
+      0 // Gemini APIの呼び出しを含むため2秒の遅延を設定
     );
     
     console.log(`Completed processing ${processedComments.length} comments`);
