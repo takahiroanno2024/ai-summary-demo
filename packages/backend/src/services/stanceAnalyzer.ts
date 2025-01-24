@@ -148,12 +148,12 @@ ${comment}
     questions: { id: string; text: string; stances: { id: string; name: string }[] }[],
     existingStances: StanceAnalysisResult[] = []
   ): Promise<StanceAnalysisResult[]> {
-    // 新しい問いと既存の分析結果をマッピング
+    // 新しい論点と既存の分析結果をマッピング
     const existingStanceMap = new Map(
       existingStances.map(stance => [stance.questionId, stance])
     );
 
-    // 各問いに対して処理（Promise.allを維持）
+    // 論点.allを維持）
     const results = await Promise.all(
       questions.map(async (question, index) => {
         // 既存の分析結果があれば再利用
@@ -163,7 +163,7 @@ ${comment}
         }
 
         // インデックスに基づいて初期遅延を設定（リクエストの分散）
-        // 新しい問いに対してのみ分析を実行
+        // 新しい論点に対してのみ分析を実行
         return this.analyzeStance(comment, question.id, question.text, question.stances);
       })
     );

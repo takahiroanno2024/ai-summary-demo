@@ -25,7 +25,7 @@ export const ProjectForm = ({ onSubmit, initialData, mode = 'create' }: ProjectF
   const [questions, setQuestions] = useState<Question[]>(initialData?.questions || []);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  // 新しい問いを追加
+  // 新しい論点を追加
   const addQuestion = () => {
     const newQuestion: Question = {
       id: uuidv4(),
@@ -37,12 +37,12 @@ export const ProjectForm = ({ onSubmit, initialData, mode = 'create' }: ProjectF
     setQuestions([...questions, newQuestion]);
   };
 
-  // 問いを削除
+  // 論点を削除
   const removeQuestion = (questionId: string) => {
     setQuestions(questions.filter(q => q.id !== questionId));
   };
 
-  // 問いのテキストを更新
+  // 論点のテキストを更新
   const updateQuestionText = (questionId: string, text: string) => {
     setQuestions(questions.map(q =>
       q.id === questionId ? { ...q, text } : q
@@ -148,16 +148,16 @@ export const ProjectForm = ({ onSubmit, initialData, mode = 'create' }: ProjectF
         />
       </div>
 
-      {/* 問いと立場の設定セクション */}
+      {/* 論点と立場の設定セクション */}
       <div className="space-y-4">
         <div className="flex justify-between items-center">
-          <h3 className="text-lg font-medium text-gray-900">問いと立場の設定</h3>
+          <h3 className="text-lg font-medium text-gray-900">論点と立場の設定</h3>
           <button
             type="button"
             onClick={addQuestion}
             className="inline-flex items-center px-3 py-1.5 border border-transparent text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
           >
-            問いを追加
+            論点を追加
           </button>
         </div>
 
@@ -166,14 +166,14 @@ export const ProjectForm = ({ onSubmit, initialData, mode = 'create' }: ProjectF
             <div className="flex justify-between items-start">
               <div className="flex-1 mr-4">
                 <label className="block text-sm font-medium text-gray-700">
-                  問い {qIndex + 1}
+                  論点 {qIndex + 1}
                 </label>
                 <input
                   type="text"
                   value={question.text}
                   onChange={(e) => updateQuestionText(question.id, e.target.value)}
                   className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
-                  placeholder="問いを入力してください"
+                  placeholder="論点を入力してください"
                   required
                 />
               </div>

@@ -116,7 +116,7 @@ app.put('/api/projects/:projectId', async (req, res) => {
       return res.status(404).json({ message: 'Project not found' });
     }
 
-    // 問いが変更されているか確認
+    // 論点が変更されているか確認
     const hasQuestionsChanged = JSON.stringify(currentProject.questions) !== JSON.stringify(questions);
 
     // プロジェクトを更新
@@ -126,7 +126,7 @@ app.put('/api/projects/:projectId', async (req, res) => {
       { new: true }
     );
 
-    // 問いが変更された場合、全コメントの立場を並列で再分析
+    // 論点が変更された場合、全コメントの立場を並列で再分析
     if (hasQuestionsChanged && questions) {
       const comments = await Comment.find({ projectId });
       const commentsToAnalyze = comments.filter(comment => comment.extractedContent);

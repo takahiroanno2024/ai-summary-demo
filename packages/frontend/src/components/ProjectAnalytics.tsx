@@ -1,6 +1,7 @@
 import { useState, useCallback, useEffect } from 'react';
 import { Project } from '../types/project';
 import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
 import { API_URL } from '../config/api';
 
 interface ProjectAnalyticsProps {
@@ -84,7 +85,7 @@ export const ProjectAnalytics = ({ project }: ProjectAnalyticsProps) => {
           プロジェクト全体の分析
         </h3>
         <div className="prose prose-sm max-w-none">
-          <ReactMarkdown className="markdown">{analysisResult.overallAnalysis}</ReactMarkdown>
+          <ReactMarkdown remarkPlugins={[remarkGfm]} className="markdown">{analysisResult.overallAnalysis}</ReactMarkdown>
         </div>
       </div>
     </div>

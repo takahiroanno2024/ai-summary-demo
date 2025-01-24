@@ -29,7 +29,7 @@ export const ProjectList = ({ projects, onEdit }: ProjectListProps) => {
                   <span>•</span>
                   <span>{project.commentCount}件のコメント</span>
                   <span>•</span>
-                  <span>{project.questions.length}件の問い</span>
+                  <span>{project.questions.length}件の論点</span>
                 </div>
               </Link>
             </div>

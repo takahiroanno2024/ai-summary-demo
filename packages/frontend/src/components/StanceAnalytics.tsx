@@ -86,7 +86,7 @@ export const StanceAnalytics = ({ comments, project }: StanceAnalyticsProps) => 
     }
   }, [selectedQuestion, fetchAnalysisReport]);
 
-  // 問いと立場ごとのコメントを集計
+  // 論点と立場ごとのコメントを集計
   const calculateStanceStats = (question: Question): Record<string, StanceStats> => {
     const stats: Record<string, StanceStats> = {};
     
@@ -120,7 +120,7 @@ export const StanceAnalytics = ({ comments, project }: StanceAnalyticsProps) => 
   };
 
   if (!selectedQuestion) {
-    return <div>問いが設定されていません</div>;
+    return <div>論点が設定されていません</div>;
   }
 
   const stanceStats = calculateStanceStats(selectedQuestion);
@@ -135,7 +135,7 @@ export const StanceAnalytics = ({ comments, project }: StanceAnalyticsProps) => 
 
   return (
     <div className="space-y-6">
-      {/* 問い選択タブ */}
+      {/* 論点選択タブ */}
       <div className="border-b border-gray-200">
         <nav className="-mb-px flex space-x-4" aria-label="Tabs">
           {project.questions.map((question, index) => (
@@ -154,13 +154,13 @@ export const StanceAnalytics = ({ comments, project }: StanceAnalyticsProps) => 
                 }
               `}
             >
-              問い {index + 1}
+              論点 {index + 1}
             </button>
           ))}
         </nav>
       </div>
 
-      {/* 選択された問いの内容 */}
+      {/* 選択された論点の内容 */}
       <div className="bg-white p-4 rounded-lg shadow-sm border border-gray-200">
         <h3 className="text-lg font-medium text-gray-900 mb-4">
           {selectedQuestion.text}
