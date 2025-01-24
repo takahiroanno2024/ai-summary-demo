@@ -8,9 +8,11 @@ interface CommentListProps {
 }
 
 export const CommentList = ({ comments, project }: CommentListProps) => {
-  const [hideEmpty, setHideEmpty] = useState(() => {
-    const saved = localStorage.getItem('hideEmptyResults');
-    return saved ? JSON.parse(saved) : true;
+  type FilterType = 'all' | 'withExtracted' | 'withExtractedAndStance';
+
+  const [filterType, setFilterType] = useState<FilterType>(() => {
+    const saved = localStorage.getItem('commentFilterType');
+    return (saved as FilterType) || 'withExtractedAndStance';
   });
 
   const [showStances, setShowStances] = useState(() => {
@@ -19,13 +21,26 @@ export const CommentList = ({ comments, project }: CommentListProps) => {
   });
 
   useEffect(() => {
-    localStorage.setItem('hideEmptyResults', JSON.stringify(hideEmpty));
+    localStorage.setItem('commentFilterType', filterType);
     localStorage.setItem('showStances', JSON.stringify(showStances));
-  }, [hideEmpty, showStances]);
+  }, [filterType, showStances]);
 
-  const filteredComments = hideEmpty
-    ? comments.filter((comment) => comment.extractedContent)
-    : comments;
+  const filteredComments = comments.filter((comment) => {
+    switch (filterType) {
+      case 'all':
+        return true;
+      case 'withExtracted':
+        return !!comment.extractedContent;
+      case 'withExtractedAndStance':
+        return !!comment.extractedContent && comment.stances?.some(stance => {
+          const question = project.questions.find(q => q.id === stance.questionId);
+          const stanceName = question?.stances.find(s => s.id === stance.stanceId)?.name;
+          return stanceName && stanceName !== '立場なし';
+        });
+      default:
+        return true;
+    }
+  });
 
   // 立場の名前を取得する関数
   const getStanceName = (questionId: string, stanceId: string): string | null => {
@@ -77,20 +92,17 @@ export const CommentList = ({ comments, project }: CommentListProps) => {
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-end mb-4 space-x-4">
-        <label className="relative inline-flex items-center cursor-pointer">
-          <input
-            type="checkbox"
-            className="sr-only peer"
-            checked={hideEmpty}
-            onChange={(e) => setHideEmpty(e.target.checked)}
-          />
-          <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
-          <span className="ms-3 text-sm font-medium text-gray-500">
-            抽出結果なしを非表示
-          </span>
-        </label>
+       <select
+         className="bg-white border border-gray-300 text-gray-700 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block p-2.5"
+         value={filterType}
+         onChange={(e) => setFilterType(e.target.value as FilterType)}
+       >
+         <option value="all">全てのコメントを表示</option>
+         <option value="withExtracted">抽出意見があるコメントを表示</option>
+         <option value="withExtractedAndStance">抽出意見と立場があるコメントを表示</option>
+       </select>
 
-        <label className="relative inline-flex items-center cursor-pointer">
+       <label className="relative inline-flex items-center cursor-pointer">
           <input
             type="checkbox"
             className="sr-only peer"
@@ -181,10 +193,14 @@ export const CommentList = ({ comments, project }: CommentListProps) => {
       ))}
       {filteredComments.length === 0 && (
         <p className="text-center text-gray-500">
-          {hideEmpty && comments.length > 0
-            ? '抽出結果のあるコメントはまだありません'
-            : 'コメントはまだありません'}
-        </p>
+         {comments.length === 0
+           ? 'コメントはまだありません'
+           : filterType === 'all'
+           ? ''
+           : filterType === 'withExtracted'
+           ? '抽出意見のあるコメントはまだありません'
+           : '抽出意見と立場のあるコメントはまだありません'}
+       </p>
       )}
     </div>
   );
