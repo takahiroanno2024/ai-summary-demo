@@ -53,9 +53,6 @@ async function processInBatches<T, R>(
   return results;
 }
 
-// 環境変数から並列処理の上限を取得（デフォルト値: 5）
-const PARALLEL_ANALYSIS_LIMIT = parseInt(process.env.PARALLEL_ANALYSIS_LIMIT || '50', 10);
-
 dotenv.config();
 
 const app = express();
@@ -170,7 +167,7 @@ app.put('/api/projects/:projectId', async (req, res) => {
       // コメントを並列で処理
       await processInBatches(
         commentsToAnalyze,
-        PARALLEL_ANALYSIS_LIMIT,
+        25,
         async (comment) => {
           console.log(`Analyzing stances for comment ${comment._id}`);
           const newStances = await stanceAnalyzer.analyzeAllStances(
@@ -259,7 +256,7 @@ app.post('/api/projects/:projectId/generate-questions', async (req, res) => {
     // コメントを並列で処理
     await processInBatches(
       commentsToAnalyze,
-      PARALLEL_ANALYSIS_LIMIT,
+      25,
       async (comment) => {
         console.log(`Analyzing stances for comment ${comment._id} with new questions`);
         const newStances = await stanceAnalyzer.analyzeAllStances(
@@ -306,7 +303,7 @@ app.post('/api/projects/:projectId/comments/bulk', async (req, res) => {
     // コメントを並列で処理
     const processedComments = await processInBatches(
       comments,
-      PARALLEL_ANALYSIS_LIMIT,
+      50,
       async (comment) => {
         // コメントの内容とソース情報を取得
         const content = typeof comment === 'string' ? comment : comment.content;
