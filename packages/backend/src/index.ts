@@ -11,10 +11,10 @@ import { ProjectReportGenerator } from './services/projectReportGenerator';
 import { QuestionGenerator } from './services/questionGenerator';
 import { v4 as uuidv4 } from 'uuid';
 
-// 並列処理を制御するユーティリティ関数
-// 処理間の遅延を作成するユーティリティ関数
+
 const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
 
+// 並列処理を制御するユーティリティ関数
 async function processInBatches<T, R>(
   items: T[],
   batchSize: number,
@@ -24,35 +24,37 @@ async function processInBatches<T, R>(
   const results: R[] = [];
   const totalBatches = Math.ceil(items.length / batchSize);
   console.log(`Starting batch processing of ${items.length} items in ${totalBatches} batches of size ${batchSize}`);
-  
+
   for (let i = 0; i < items.length; i += batchSize) {
     const currentBatch = Math.floor(i / batchSize) + 1;
     const batch = items.slice(i, i + batchSize);
     console.log(`Processing batch ${currentBatch}/${totalBatches} (${batch.length} items)`);
-    
-    // バッチ内の各アイテムを順次処理（並列処理をやめて逐次処理に変更）
-    for (let j = 0; j < batch.length; j++) {
-      const item = batch[j];
+
+    // バッチ内の各アイテムを並列処理
+    const batchPromises = batch.map(async (item, j) => {
       const result = await processor(item);
       console.log(`Completed item ${i + j + 1}/${items.length}`);
-      results.push(result);
-      
-      // 最後のアイテム以外は遅延を入れる
-      if (i + j < items.length - 1) {
-        console.log(`Waiting ${delayMs}ms before processing next item...`);
-        await delay(delayMs);
-      }
+      return result;
+    });
+
+    const batchResults = await Promise.all(batchPromises);
+    results.push(...batchResults);
+
+    // バッチ処理後に遅延を入れる
+    if (i < items.length - batchSize) {
+      console.log(`Waiting ${delayMs}ms before processing next batch...`);
+      await delay(delayMs);
     }
-    
+
     console.log(`Completed batch ${currentBatch}/${totalBatches}`);
   }
-  
+
   console.log('Batch processing completed');
   return results;
 }
 
 // 環境変数から並列処理の上限を取得（デフォルト値: 5）
-const PARALLEL_ANALYSIS_LIMIT = parseInt(process.env.PARALLEL_ANALYSIS_LIMIT || '5', 10);
+const PARALLEL_ANALYSIS_LIMIT = parseInt(process.env.PARALLEL_ANALYSIS_LIMIT || '50', 10);
 
 dotenv.config();
 
@@ -180,7 +182,7 @@ app.put('/api/projects/:projectId', async (req, res) => {
           await Comment.findByIdAndUpdate(comment._id, { stances: newStances });
           console.log(`Updated stances for comment ${comment._id}`);
         },
-        0 // Gemini APIの呼び出しを含むため2秒の遅延を設定
+        0
       );
       console.log(`Completed reanalysis of all comments for project ${projectId}`);
     }
@@ -268,7 +270,7 @@ app.post('/api/projects/:projectId/generate-questions', async (req, res) => {
         await Comment.findByIdAndUpdate(comment._id, { stances: newStances });
         console.log(`Updated stances for comment ${comment._id} with new questions`);
       },
-      0 // Gemini APIの呼び出しを含むため2秒の遅延を設定
+      0
     );
     console.log(`Completed stance reanalysis for all comments in project ${projectId}`);
 
@@ -347,7 +349,7 @@ app.post('/api/projects/:projectId/comments/bulk', async (req, res) => {
           sourceUrl,
         });
       },
-      0 // Gemini APIの呼び出しを含むため2秒の遅延を設定
+      0
     );
     
     console.log(`Completed processing ${processedComments.length} comments`);
