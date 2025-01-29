@@ -40,20 +40,26 @@ Please respond with either "RELEVANT" or "NOT_RELEVANT". Consider a comment rele
       console.log('Relevance Check LLM Output:', text);
 
       return text.trim() === "RELEVANT";
-    } catch (error) {
+    } catch (error: any) {
       console.error(`Error in relevance check (attempt ${retries + 1}/${MAX_RETRIES}):`, error);
       
-      if (retries >= MAX_RETRIES - 1) {
-        console.error('Max retries reached for relevance check');
-        return false;
+      // 503エラーの場合のみリトライ
+      if (error?.status === 503 && retries < MAX_RETRIES - 1) {
+        // 指数バックオフで待機時間を計算
+        const delay = INITIAL_RETRY_DELAY * Math.pow(2, retries);
+        console.log(`Received 503 error, retrying after ${delay}ms...`);
+        await sleep(delay);
+        retries++;
+        continue;
       }
-
-      // 指数バックオフで待機時間を計算
-      const delay = INITIAL_RETRY_DELAY * Math.pow(2, retries);
-      console.log(`Retrying after ${delay}ms...`);
-      await sleep(delay);
       
-      retries++;
+      // 503エラーでない場合、またはリトライ回数が上限に達した場合
+      if (error?.status === 503) {
+        console.log('Giving up after retry: 503 error persists');
+      } else {
+        console.log('Giving up: encountered error:', error?.status || 'unknown error');
+      }
+      return false;
     }
   }
 }
@@ -106,20 +112,26 @@ export async function extractContent(content: string, extractionTopic?: string):
       console.log('Extraction LLM Output:', text);
 
       return text.trim();
-    } catch (error) {
+    } catch (error: any) {
       console.error(`Error in content extraction (attempt ${retries + 1}/${MAX_RETRIES}):`, error);
       
-      if (retries >= MAX_RETRIES - 1) {
-        console.error('Max retries reached for content extraction');
-        return null;
+      // 503エラーの場合のみリトライ
+      if (error?.status === 503 && retries < MAX_RETRIES - 1) {
+        // 指数バックオフで待機時間を計算
+        const delay = INITIAL_RETRY_DELAY * Math.pow(2, retries);
+        console.log(`Received 503 error, retrying after ${delay}ms...`);
+        await sleep(delay);
+        retries++;
+        continue;
       }
-
-      // 指数バックオフで待機時間を計算
-      const delay = INITIAL_RETRY_DELAY * Math.pow(2, retries);
-      console.log(`Retrying after ${delay}ms...`);
-      await sleep(delay);
       
-      retries++;
+      // 503エラーでない場合、またはリトライ回数が上限に達した場合
+      if (error?.status === 503) {
+        console.log('Giving up after retry: 503 error persists');
+      } else {
+        console.log('Giving up: encountered error:', error?.status || 'unknown error');
+      }
+      return null;
     }
   }
 }
