@@ -21,6 +21,11 @@ const CsvUploadPage: React.FC = () => {
   const [progress, setProgress] = useState<number>(0);
   const [status, setStatus] = useState<string>('');
   const [isUploading, setIsUploading] = useState<boolean>(false);
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [previewData, setPreviewData] = useState<{
+    totalRows: number;
+    isValid: boolean;
+  } | null>(null);
   const abortControllerRef = useRef<AbortController | null>(null);
 
   useEffect(() => {
@@ -86,10 +91,44 @@ const CsvUploadPage: React.FC = () => {
     setStatus('アップロード完了');
   };
 
-  const handleFileUpload = useCallback((event: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileSelect = useCallback((event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
-    if (!file || !projectId) {
-      setStatus('ファイルとプロジェクトを選択してください');
+    if (!file) {
+      setSelectedFile(null);
+      setPreviewData(null);
+      setStatus('');
+      return;
+    }
+
+    setSelectedFile(file);
+    setStatus('CSVを検証中...');
+
+    Papa.parse<CsvRow>(file, {
+      header: true,
+      preview: 1,
+      complete: (results: ParseResult<CsvRow>) => {
+        const hasRequiredColumns = results.meta.fields?.includes('content') ?? false;
+        setPreviewData({
+          totalRows: results.data.length,
+          isValid: hasRequiredColumns
+        });
+        setStatus(
+          hasRequiredColumns 
+            ? `${file.name} が選択されました (${results.data.length}件のデータ)`
+            : 'CSVファイルに必要な列(content)が含まれていません'
+        );
+      },
+      error: (error: Error) => {
+        console.error('CSV parse error:', error);
+        setStatus(`CSVの検証に失敗しました: ${error.message}`);
+        setPreviewData(null);
+      }
+    });
+  }, []);
+
+  const handleStartUpload = useCallback(() => {
+    if (!selectedFile || !projectId || !previewData?.isValid) {
+      setStatus('有効なファイルとプロジェクトを選択してください');
       return;
     }
 
@@ -99,7 +138,7 @@ const CsvUploadPage: React.FC = () => {
 
     abortControllerRef.current = new AbortController();
 
-    Papa.parse<CsvRow>(file, {
+    Papa.parse<CsvRow>(selectedFile, {
       header: true,
       complete: async (results: ParseResult<CsvRow>) => {
         const data = results.data;
@@ -119,7 +158,7 @@ const CsvUploadPage: React.FC = () => {
         setIsUploading(false);
       }
     });
-  }, [projectId]);
+  }, [projectId, selectedFile, previewData]);
 
   const handleCancel = useCallback(() => {
     abortControllerRef.current?.abort();
@@ -156,8 +195,8 @@ const CsvUploadPage: React.FC = () => {
           <input
             type="file"
             accept=".csv"
-            onChange={handleFileUpload}
-            disabled={isUploading || !projectId}
+            onChange={handleFileSelect}
+            disabled={isUploading}
             className="mt-1 block w-full"
           />
         </label>
@@ -165,6 +204,18 @@ const CsvUploadPage: React.FC = () => {
           必要な列: content, sourceType (optional), sourceUrl (optional)
         </p>
       </div>
+
+      {selectedFile && previewData?.isValid && !isUploading && (
+        <div className="mb-4">
+          <button
+            onClick={handleStartUpload}
+            disabled={!projectId}
+            className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 disabled:bg-gray-400"
+          >
+            アップロード開始
+          </button>
+        </div>
+      )}
 
       {isUploading && (
         <div className="mb-4">
