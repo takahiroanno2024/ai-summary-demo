@@ -2,31 +2,56 @@ import express from 'express';
 import mongoose from 'mongoose';
 import cors from 'cors';
 import dotenv from 'dotenv';
-import { Comment, IComment } from './models/comment';
+import { Comment, IComment, CommentSourceType } from './models/comment';
 import { Project, IProject, IQuestion } from './models/project';
 import { extractContent } from './services/extractionService';
 import { StanceAnalyzer } from './services/stanceAnalyzer';
-import { StanceAnalysisService } from './services/stanceAnalysisService';
+import { StanceReportGenerator } from './services/stanceReportGenerator';
+import { ProjectReportGenerator } from './services/projectReportGenerator';
 import { QuestionGenerator } from './services/questionGenerator';
 import { v4 as uuidv4 } from 'uuid';
+
+
+const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
 
 // 並列処理を制御するユーティリティ関数
 async function processInBatches<T, R>(
   items: T[],
   batchSize: number,
-  processor: (item: T) => Promise<R>
+  processor: (item: T) => Promise<R>,
+  delayMs: number = 1000 // デフォルトで1秒の遅延
 ): Promise<R[]> {
   const results: R[] = [];
+  const totalBatches = Math.ceil(items.length / batchSize);
+  console.log(`Starting batch processing of ${items.length} items in ${totalBatches} batches of size ${batchSize}`);
+
   for (let i = 0; i < items.length; i += batchSize) {
+    const currentBatch = Math.floor(i / batchSize) + 1;
     const batch = items.slice(i, i + batchSize);
-    const batchResults = await Promise.all(batch.map(processor));
+    console.log(`Processing batch ${currentBatch}/${totalBatches} (${batch.length} items)`);
+
+    // バッチ内の各アイテムを並列処理
+    const batchPromises = batch.map(async (item, j) => {
+      const result = await processor(item);
+      console.log(`Completed item ${i + j + 1}/${items.length}`);
+      return result;
+    });
+
+    const batchResults = await Promise.all(batchPromises);
     results.push(...batchResults);
+
+    // バッチ処理後に遅延を入れる
+    if (i < items.length - batchSize) {
+      console.log(`Waiting ${delayMs}ms before processing next batch...`);
+      await delay(delayMs);
+    }
+
+    console.log(`Completed batch ${currentBatch}/${totalBatches}`);
   }
+
+  console.log('Batch processing completed');
   return results;
 }
-
-// 環境変数から並列処理の上限を取得（デフォルト値: 5）
-const PARALLEL_ANALYSIS_LIMIT = parseInt(process.env.PARALLEL_ANALYSIS_LIMIT || '5', 10);
 
 dotenv.config();
 
@@ -40,7 +65,8 @@ app.use(express.json());
 // サービスの初期化
 const stanceAnalyzer = new StanceAnalyzer(process.env.GEMINI_API_KEY || '');
 const questionGenerator = new QuestionGenerator(process.env.GEMINI_API_KEY || '');
-const stanceAnalysisService = new StanceAnalysisService(process.env.GEMINI_API_KEY || '');
+const stanceAnalysisService = new StanceReportGenerator(process.env.GEMINI_API_KEY || '');
+const projectReportGenerator = new ProjectReportGenerator(process.env.GEMINI_API_KEY || '');
 
 // MongoDBへの接続
 mongoose.connect(process.env.MONGODB_URI || 'mongodb://localhost:27017/comment-system')
@@ -54,7 +80,19 @@ mongoose.connect(process.env.MONGODB_URI || 'mongodb://localhost:27017/comment-s
 app.get('/api/projects', async (req, res) => {
   try {
     const projects = await Project.find().sort({ createdAt: -1 });
-    res.json(projects);
+    
+    // 各プロジェクトのコメント件数を取得
+    const projectsWithCommentCount = await Promise.all(
+      projects.map(async (project) => {
+        const commentCount = await Comment.countDocuments({ projectId: project._id });
+        return {
+          ...project.toObject(),
+          commentCount
+        };
+      })
+    );
+    
+    res.json(projectsWithCommentCount);
   } catch (error) {
     res.status(500).json({ message: 'Error fetching projects', error });
   }
@@ -102,7 +140,7 @@ app.put('/api/projects/:projectId', async (req, res) => {
       return res.status(404).json({ message: 'Project not found' });
     }
 
-    // 問いが変更されているか確認
+    // 論点が変更されているか確認
     const hasQuestionsChanged = JSON.stringify(currentProject.questions) !== JSON.stringify(questions);
 
     // プロジェクトを更新
@@ -112,22 +150,26 @@ app.put('/api/projects/:projectId', async (req, res) => {
       { new: true }
     );
 
-    // 問いが変更された場合、全コメントの立場を並列で再分析
+    // 論点が変更された場合、全コメントの立場を並列で再分析
     if (hasQuestionsChanged && questions) {
+      console.log(`Questions changed for project ${projectId}. Starting comment reanalysis...`);
       const comments = await Comment.find({ projectId });
       const commentsToAnalyze = comments.filter(comment => comment.extractedContent);
+      console.log(`Found ${commentsToAnalyze.length} comments with extracted content to analyze`);
       
       const mappedQuestions = questions.map((q: IQuestion) => ({
         id: q.id,
         text: q.text,
         stances: q.stances,
       }));
+      console.log(`Mapped ${mappedQuestions.length} questions for analysis`);
 
       // コメントを並列で処理
       await processInBatches(
         commentsToAnalyze,
-        PARALLEL_ANALYSIS_LIMIT,
+        25,
         async (comment) => {
+          console.log(`Analyzing stances for comment ${comment._id}`);
           const newStances = await stanceAnalyzer.analyzeAllStances(
             comment.extractedContent!,
             mappedQuestions,
@@ -135,8 +177,11 @@ app.put('/api/projects/:projectId', async (req, res) => {
           );
           
           await Comment.findByIdAndUpdate(comment._id, { stances: newStances });
-        }
+          console.log(`Updated stances for comment ${comment._id}`);
+        },
+        0
       );
+      console.log(`Completed reanalysis of all comments for project ${projectId}`);
     }
 
     res.json(updatedProject);
@@ -197,26 +242,34 @@ app.post('/api/projects/:projectId/generate-questions', async (req, res) => {
     );
 
     // 全コメントの立場を並列で再分析
+    console.log(`Starting stance reanalysis after question generation for project ${projectId}`);
     const commentsToAnalyze = comments.filter(comment => comment.extractedContent);
+    console.log(`Found ${commentsToAnalyze.length} comments with extracted content to analyze`);
+    
     const mappedQuestions = formattedQuestions.map(q => ({
       id: q.id,
       text: q.text,
       stances: q.stances,
     }));
+    console.log(`Mapped ${mappedQuestions.length} newly generated questions for analysis`);
 
     // コメントを並列で処理
     await processInBatches(
       commentsToAnalyze,
-      PARALLEL_ANALYSIS_LIMIT,
+      25,
       async (comment) => {
+        console.log(`Analyzing stances for comment ${comment._id} with new questions`);
         const newStances = await stanceAnalyzer.analyzeAllStances(
           comment.extractedContent!,
           mappedQuestions
         );
         
         await Comment.findByIdAndUpdate(comment._id, { stances: newStances });
-      }
+        console.log(`Updated stances for comment ${comment._id} with new questions`);
+      },
+      0
     );
+    console.log(`Completed stance reanalysis for all comments in project ${projectId}`);
 
     res.json(updatedProject);
   } catch (error) {
@@ -229,6 +282,87 @@ app.post('/api/projects/:projectId/generate-questions', async (req, res) => {
 });
 
 // コメント関連のエンドポイント
+// コメントの一括インポート
+app.post('/api/projects/:projectId/comments/bulk', async (req, res) => {
+  try {
+    const { comments } = req.body;
+    const projectId = req.params.projectId;
+
+    if (!Array.isArray(comments)) {
+      return res.status(400).json({ message: 'Comments must be an array' });
+    }
+
+    // プロジェクトの取得
+    const project = await Project.findById(projectId);
+    if (!project) {
+      return res.status(404).json({ message: 'Project not found' });
+    }
+
+    console.log(`Starting bulk import of ${comments.length} comments for project ${projectId}`);
+    
+    // コメントを並列で処理
+    const processedComments = await processInBatches(
+      comments,
+      50,
+      async (comment) => {
+        // コメントの内容とソース情報を取得
+        const content = typeof comment === 'string' ? comment : comment.content;
+        const sourceType = typeof comment === 'string' ? 'other' : (comment.sourceType || 'other');
+        const sourceUrl = typeof comment === 'string' ? '' : (comment.sourceUrl || '');
+        console.log(`Processing comment: ${content.substring(0, 50)}...`);
+
+        // 内容の抽出
+        console.log('Extracting content based on topic...');
+        const extractedContent = await extractContent(content, project.extractionTopic);
+        if (extractedContent === null) {
+          console.log('No relevant content extracted for this comment');
+        } else {
+          console.log(`Extracted content: ${extractedContent.substring(0, 50)}...`);
+        }
+
+        // 抽出結果がnullの場合は立場分析をスキップ
+        let stances: { questionId: string; stanceId: string | null }[] = [];
+        if (extractedContent !== null) {
+          console.log('Analyzing stances for extracted content...');
+          stances = await stanceAnalyzer.analyzeAllStances(
+            extractedContent,
+            project.questions.map(q => ({
+              id: q.id,
+              text: q.text,
+              stances: q.stances,
+            }))
+          );
+          console.log(`Stance analysis completed with ${stances.length} stances`);
+        }
+
+        // コメントオブジェクトの作成
+        console.log('Creating comment object...');
+        return new Comment({
+          content,
+          projectId,
+          extractedContent,
+          stances,
+          sourceType: sourceType as CommentSourceType,
+          sourceUrl,
+        });
+      },
+      0
+    );
+    
+    console.log(`Completed processing ${processedComments.length} comments`);
+
+    // 全コメントを一括保存
+    const savedComments = await Comment.insertMany(processedComments);
+    res.status(201).json(savedComments);
+  } catch (error) {
+    console.error('Error importing comments:', error);
+    res.status(400).json({
+      message: 'Error importing comments',
+      error: error instanceof Error ? error.message : 'Unknown error'
+    });
+  }
+});
+
 // プロジェクトのコメント一覧の取得
 app.get('/api/projects/:projectId/comments', async (req, res) => {
   try {
@@ -244,7 +378,7 @@ app.get('/api/projects/:projectId/comments', async (req, res) => {
 // プロジェクトへのコメント追加
 app.post('/api/projects/:projectId/comments', async (req, res) => {
   try {
-    const { content } = req.body;
+    const { content, sourceType = 'other', sourceUrl = '' } = req.body;
     const projectId = req.params.projectId;
 
     // プロジェクトの取得
@@ -256,16 +390,15 @@ app.post('/api/projects/:projectId/comments', async (req, res) => {
     // 内容の抽出
     const extractedContent = await extractContent(content, project.extractionTopic);
 
-    // // 抽出結果がnullの場合（トピックなし、無関係、エラー）は立場分析をスキップ
-    // const stances = extractedContent === null ? [] : await stanceAnalyzer.analyzeAllStances(
-    //   extractedContent,
-    //   project.questions.map(q => ({
-    //     id: q.id,
-    //     text: q.text,
-    //     stances: q.stances,
-    //   }))
-    // );
-    const stances: any[] = [];
+    // 抽出結果がnullの場合（トピックなし、無関係、エラー）は立場分析をスキップ
+    const stances = extractedContent === null ? [] : await stanceAnalyzer.analyzeAllStances(
+      extractedContent,
+      project.questions.map(q => ({
+        id: q.id,
+        text: q.text,
+        stances: q.stances,
+      }))
+    );
 
     // コメントの保存
     const comment = new Comment({
@@ -273,6 +406,8 @@ app.post('/api/projects/:projectId/comments', async (req, res) => {
       projectId,
       extractedContent,
       stances,
+      sourceType: sourceType as CommentSourceType,
+      sourceUrl,
     });
     const savedComment = await comment.save();
     res.status(201).json(savedComment);
@@ -321,12 +456,15 @@ app.get('/api/projects/:projectId/questions/:questionId/stance-analysis', async 
       }
     });
 
+    const forceRegenerate = req.query.forceRegenerate === 'true';
+    
     const result = await stanceAnalysisService.analyzeStances(
       projectId,
       question.text,
       comments,
       question.stances,
-      questionId
+      questionId,
+      forceRegenerate
     );
 
     res.json(result);
@@ -340,6 +478,96 @@ app.get('/api/projects/:projectId/questions/:questionId/stance-analysis', async 
 });
 
 // サーバーの起動
+// プロジェクト全体の分析レポートを生成
+app.get('/api/projects/:projectId/analysis', async (req, res) => {
+  try {
+    const projectId = req.params.projectId;
+
+    // プロジェクトの取得
+    const project = await Project.findById(projectId);
+    if (!project) {
+      return res.status(404).json({ message: 'Project not found' });
+    }
+
+    // プロジェクトの全コメントを取得
+    const comments = await Comment.find({ projectId });
+
+    // プロジェクト全体の分析を生成
+    const analysis = await projectReportGenerator.generateProjectReport(
+      project,
+      comments
+    );
+
+    res.json(analysis);
+  } catch (error) {
+    console.error('Error generating project analysis:', error);
+    res.status(500).json({
+      message: 'Error generating project analysis',
+      error: error instanceof Error ? error.message : 'Unknown error'
+    });
+  }
+});
+
+// プロジェクトデータをCSVとしてエクスポート
+app.get('/api/projects/:projectId/export-csv', async (req, res) => {
+  try {
+    const projectId = req.params.projectId;
+
+    // プロジェクトの取得
+    const project = await Project.findById(projectId);
+    if (!project) {
+      return res.status(404).json({ message: 'Project not found' });
+    }
+
+    // プロジェクトの全コメントを取得
+    const comments = await Comment.find({ projectId }).sort({ createdAt: 1 });
+
+    // CSVヘッダーの作成
+    const headers = ['CommentID', 'Content', 'ExtractedContent', 'Source', 'URL'];
+    project.questions.forEach(question => {
+      headers.push(`Q${question.id}(${question.text})`);
+    });
+
+    // CSVデータの作成
+    const csvRows = [headers.join(',')];
+
+    // 各コメントについて処理
+    comments.forEach(comment => {
+      const row = [
+        comment._id.toString(),
+        `"${comment.content.replace(/"/g, '""')}"`,
+        comment.extractedContent ? `"${comment.extractedContent.replace(/"/g, '""')}"` : '',
+        comment.sourceType || '',
+        comment.sourceUrl || ''
+      ];
+
+      // 各質問に対する立場を追加
+      project.questions.forEach(question => {
+        const stance = comment.stances.find(s => s.questionId === question.id);
+        if (stance) {
+          const stanceObj = question.stances.find(s => s.id === stance.stanceId);
+          row.push(stanceObj ? stanceObj.name : '');
+        } else {
+          row.push('');
+        }
+      });
+
+      csvRows.push(row.join(','));
+    });
+
+    // CSVファイルとしてレスポンスを返す
+    res.setHeader('Content-Type', 'text/csv');
+    res.setHeader('Content-Disposition', `attachment; filename=project-${projectId}-export.csv`);
+    res.send(csvRows.join('\n'));
+  } catch (error) {
+    console.error('Error exporting project data:', error);
+    res.status(500).json({
+      message: 'Error exporting project data',
+      error: error instanceof Error ? error.message : 'Unknown error'
+    });
+  }
+});
+
 app.listen(port, () => {
   console.log(`Server running on port ${port}`);
 });

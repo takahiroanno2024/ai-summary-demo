@@ -1,5 +1,7 @@
 import mongoose from 'mongoose';
 
+export type CommentSourceType = 'youtube' | 'x' | 'form' | 'other';
+
 export interface ICommentStance {
   questionId: string;
   stanceId: string;
@@ -12,6 +14,8 @@ export interface IComment {
   extractedContent?: string;
   stances: ICommentStance[];
   createdAt: Date;
+  sourceType?: CommentSourceType;
+  sourceUrl?: string;
 }
 
 const commentStanceSchema = new mongoose.Schema<ICommentStance>({
@@ -54,6 +58,16 @@ const commentSchema = new mongoose.Schema<IComment>({
   createdAt: {
     type: Date,
     default: Date.now,
+  },
+  sourceType: {
+    type: String,
+    enum: ['youtube', 'x', 'form', 'other'],
+    required: false,
+  },
+  sourceUrl: {
+    type: String,
+    required: false,
+    trim: true,
   },
 });
 
