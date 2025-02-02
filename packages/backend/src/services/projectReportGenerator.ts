@@ -3,19 +3,10 @@ import mongoose from 'mongoose';
 import { IProject } from '../models/project';
 import { IComment } from '../models/comment';
 import { StanceReportGenerator } from './stanceReportGenerator';
+import { ProjectAnalysis, IProjectAnalysis } from '../models/projectAnalysis';
 
 export interface ProjectAnalysisResult {
   projectName: string;
-  questionAnalyses: {
-    question: string;
-    stanceAnalysis: {
-      [key: string]: {
-        count: number;
-        comments: string[];
-      };
-    };
-    analysis: string;
-  }[];
   overallAnalysis: string;
 }
 
@@ -28,12 +19,6 @@ export class ProjectReportGenerator {
     this.genAI = new GoogleGenerativeAI(apiKey);
     this.model = this.genAI.getGenerativeModel({ model: 'gemini-1.5-pro' });
     this.stanceReportGenerator = new StanceReportGenerator(apiKey);
-  }
-
-  private sampleComments(comments: string[], count: number = 10): string[] {
-    if (comments.length <= count) return comments;
-    const shuffled = [...comments].sort(() => 0.5 - Math.random());
-    return shuffled.slice(0, count);
   }
 
   private async generateOverallAnalysisPrompt(
@@ -81,12 +66,32 @@ ${qa.analysis}
 `;
   }
 
+  async getAnalysis(
+    projectId: string
+  ): Promise<IProjectAnalysis | null> {
+    return ProjectAnalysis.findOne({
+      projectId: new mongoose.Types.ObjectId(projectId)
+    });
+  }
+
   async generateProjectReport(
     project: IProject & { _id: mongoose.Types.ObjectId },
-    comments: IComment[]
+    comments: IComment[],
+    forceRegenerate: boolean = false
   ): Promise<ProjectAnalysisResult> {
     try {
-      // 各質問の分析を実行
+      // 既存の分析結果を確認(強制再生成でない場合のみ)
+      if (!forceRegenerate) {
+        const existingAnalysis = await this.getAnalysis(project._id.toString());
+        if (existingAnalysis) {
+          return {
+            projectName: existingAnalysis.projectName,
+            overallAnalysis: existingAnalysis.overallAnalysis
+          };
+        }
+      }
+
+      // 各質問の分析を実行(全体分析のための入力として使用)
       const questionAnalyses = await Promise.all(
         project.questions.map(async question => {
           const analysis = await this.stanceReportGenerator.analyzeStances(
@@ -110,9 +115,16 @@ ${qa.analysis}
       const result = await this.model.generateContent(prompt);
       const overallAnalysis = result.response.text();
 
+      // 分析結果をデータベースに保存
+      const projectAnalysisDoc = new ProjectAnalysis({
+        projectId: project._id,
+        projectName: project.name,
+        overallAnalysis,
+      });
+      await projectAnalysisDoc.save();
+
       return {
         projectName: project.name,
-        questionAnalyses,
         overallAnalysis
       };
     } catch (error) {

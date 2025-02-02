@@ -10,16 +10,6 @@ interface ProjectAnalyticsProps {
 
 interface ProjectAnalysisResult {
   projectName: string;
-  questionAnalyses: {
-    question: string;
-    stanceAnalysis: {
-      [key: string]: {
-        count: number;
-        comments: string[];
-      };
-    };
-    analysis: string;
-  }[];
   overallAnalysis: string;
 }
 
@@ -28,11 +18,13 @@ export const ProjectAnalytics = ({ project }: ProjectAnalyticsProps) => {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const fetchAnalysis = useCallback(async () => {
+  const fetchAnalysis = useCallback(async (forceRegenerate: boolean = false) => {
     try {
       setIsLoading(true);
       setError(null);
-      const response = await fetch(`${API_URL}/projects/${project._id}/analysis`);
+      const response = await fetch(
+        `${API_URL}/projects/${project._id}/analysis?forceRegenerate=${forceRegenerate}`
+      );
       
       if (!response.ok) {
         throw new Error('分析レポートの取得に失敗しました');
@@ -81,11 +73,40 @@ export const ProjectAnalytics = ({ project }: ProjectAnalyticsProps) => {
     <div className="space-y-8">
       {/* 全体分析 */}
       <div className="bg-white p-6 rounded-lg border border-gray-200 shadow-sm">
-        <h3 className="text-xl font-semibold text-gray-900 mb-4">
-          プロジェクト全体の分析
-        </h3>
+        <div className="flex justify-between items-center mb-4">
+          <h3 className="text-xl font-semibold text-gray-900">
+            プロジェクト全体の分析
+          </h3>
+          <button
+            onClick={() => fetchAnalysis(true)}
+            disabled={isLoading}
+            className={`
+              inline-flex items-center px-2 py-1 text-sm font-medium rounded
+              border border-gray-300 bg-white hover:bg-gray-50
+              text-blue-600 hover:text-blue-700
+              ${isLoading ? 'cursor-not-allowed opacity-50' : ''}
+            `}
+          >
+            <svg
+              className={`mr-1 h-4 w-4 ${isLoading ? 'animate-spin' : ''}`}
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth="2"
+                d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
+              />
+            </svg>
+            {isLoading ? '再生成中' : '再生成'}
+          </button>
+        </div>
         <div className="prose prose-sm max-w-none">
-          <ReactMarkdown remarkPlugins={[remarkGfm]} className="markdown">{analysisResult.overallAnalysis}</ReactMarkdown>
+          <ReactMarkdown remarkPlugins={[remarkGfm]} className="markdown">
+            {analysisResult.overallAnalysis}
+          </ReactMarkdown>
         </div>
       </div>
     </div>
