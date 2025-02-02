@@ -492,10 +492,13 @@ app.get('/api/projects/:projectId/analysis', async (req, res) => {
     // プロジェクトの全コメントを取得
     const comments = await Comment.find({ projectId });
 
+    const forceRegenerate = req.query.forceRegenerate === 'true';
+    
     // プロジェクト全体の分析を生成
     const analysis = await projectReportGenerator.generateProjectReport(
       project,
-      comments
+      comments,
+      forceRegenerate
     );
 
     res.json(analysis);
