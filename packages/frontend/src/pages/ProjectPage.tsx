@@ -1,5 +1,5 @@
-import { useEffect, useState } from 'react';
-import { useParams } from 'react-router-dom';
+import { useEffect, useState, useMemo } from 'react';
+import { useParams, useLocation, useNavigate, Link } from 'react-router-dom';
 import { Project } from '../types/project';
 import { Comment, CommentSourceType } from '../types/comment';
 import { CommentList } from '../components/CommentList';
@@ -16,7 +16,23 @@ export const ProjectPage = () => {
   const [comments, setComments] = useState<Comment[]>([]);
   const [error, setError] = useState<string>('');
   const [isLoading, setIsLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState<'comments' | 'analytics' | 'overall'>('comments');
+  const location = useLocation();
+  const navigate = useNavigate();
+  
+  const activeTab = useMemo(() => {
+    const path = location.pathname.split('/').pop();
+    if (path === 'comments' || path === 'analytics' || path === 'overall' || path === 'chat') {
+      return path;
+    }
+    return 'comments';
+  }, [location.pathname]) as 'comments' | 'analytics' | 'overall' | 'chat';
+
+  // 初期リダイレクト
+  useEffect(() => {
+    if (location.pathname === `/projects/${projectId}`) {
+      navigate(`/projects/${projectId}/comments`);
+    }
+  }, [projectId, location.pathname, navigate]);
 
   const fetchProject = async () => {
     try {
@@ -106,8 +122,8 @@ export const ProjectPage = () => {
       {/* タブナビゲーション */}
       <div className="border-b border-gray-200 mb-8">
         <nav className="-mb-px flex space-x-8" aria-label="Tabs">
-          <button
-            onClick={() => setActiveTab('comments')}
+          <Link
+            to={`/projects/${projectId}/comments`}
             className={`
               whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm
               ${
@@ -118,9 +134,9 @@ export const ProjectPage = () => {
             `}
           >
             コメント一覧
-          </button>
-          <button
-            onClick={() => setActiveTab('analytics')}
+          </Link>
+          <Link
+            to={`/projects/${projectId}/analytics`}
             className={`
               whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm
               ${
@@ -131,9 +147,9 @@ export const ProjectPage = () => {
             `}
           >
             論点ごとの分析
-          </button>
-          <button
-            onClick={() => setActiveTab('overall')}
+          </Link>
+          <Link
+            to={`/projects/${projectId}/overall`}
             className={`
               whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm
               ${
@@ -144,7 +160,20 @@ export const ProjectPage = () => {
             `}
           >
             全体の分析
-          </button>
+          </Link>
+          <Link
+            to={`/projects/${projectId}/chat`}
+            className={`
+              whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm
+              ${
+                activeTab === 'chat'
+                  ? 'border-blue-500 text-blue-600'
+                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+              }
+            `}
+          >
+            チャット
+          </Link>
         </nav>
       </div>
 
@@ -210,6 +239,17 @@ export const ProjectPage = () => {
 
         {activeTab === 'overall' && (
           <ProjectAnalytics project={project} />
+        )}
+
+        {activeTab === 'chat' && (
+          <div className="bg-white rounded-lg shadow-sm p-6">
+            <h2 className="text-xl font-semibold text-gray-900 mb-4">
+              チャット
+            </h2>
+            <p className="text-gray-500">
+              準備中...
+            </p>
+          </div>
         )}
       </div>
     </div>

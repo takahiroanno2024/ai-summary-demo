@@ -20,7 +20,12 @@ function App() {
 
         <Routes>
           <Route path="/" element={<HomePage />} />
-          <Route path="/projects/:projectId" element={<ProjectPage />} />
+          <Route path="/projects/:projectId" element={<ProjectPage />}>
+            <Route path="comments" element={<ProjectPage />} />
+            <Route path="analytics" element={<ProjectPage />} />
+            <Route path="overall" element={<ProjectPage />} />
+            <Route path="chat" element={<ProjectPage />} />
+          </Route>
           <Route path="/csv-upload" element={<CsvUploadPage />} />
         </Routes>
       </div>
