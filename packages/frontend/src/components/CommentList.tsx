@@ -128,20 +128,29 @@ export const CommentList = ({ comments, project }: CommentListProps) => {
               </span>
               {comment.sourceType && (
                 <div className="flex items-center gap-2">
-                  {comment.sourceUrl ? (
-                    <a
-                      href={comment.sourceUrl}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium hover:opacity-80 ${getSourceTypeStyle(comment.sourceType)}`}
-                    >
-                      {getSourceTypeName(comment.sourceType)}
-                    </a>
-                  ) : (
-                    <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getSourceTypeStyle(comment.sourceType)}`}>
-                      {getSourceTypeName(comment.sourceType)}
-                    </span>
-                  )}
+                  <div className="group relative">
+                    {comment.sourceUrl ? (
+                      <a
+                        href={comment.sourceUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium hover:opacity-80 ${getSourceTypeStyle(comment.sourceType)}`}
+                      >
+                        {getSourceTypeName(comment.sourceType)}
+                      </a>
+                    ) : (
+                      <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getSourceTypeStyle(comment.sourceType)}`}>
+                        {getSourceTypeName(comment.sourceType)}
+                      </span>
+                    )}
+                    <div className="invisible group-hover:visible absolute z-10 w-96 p-2 mt-2 text-sm bg-gray-900 text-white rounded shadow-lg right-full translate-x-24">
+                      {comment.sourceType === 'x' ? (
+                        'X(Twitter)の規約上、元のコンテンツを表示できません。リンクから元の投稿をご確認ください。'
+                      ) : (
+                        comment.content || '元のコンテンツがありません'
+                      )}
+                    </div>
+                  </div>
                 </div>
               )}
             </div>
