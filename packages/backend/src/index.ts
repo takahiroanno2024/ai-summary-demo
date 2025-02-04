@@ -10,7 +10,9 @@ import { StanceReportGenerator } from './services/stanceReportGenerator';
 import { ProjectReportGenerator } from './services/projectReportGenerator';
 import { QuestionGenerator } from './services/questionGenerator';
 import { v4 as uuidv4 } from 'uuid';
-
+import chatRouter from './routes/chat';
+import { ChatMessage } from './models/chatMessage';
+import { chatService } from './services/chatService';
 
 const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
 
@@ -57,10 +59,13 @@ dotenv.config();
 
 const app = express();
 const port = process.env.PORT || 3001;
-
 // ミドルウェアの設定
 app.use(cors());
 app.use(express.json());
+
+// ルーターの設定
+app.use('/api', chatRouter);
+
 
 // サービスの初期化
 const stanceAnalyzer = new StanceAnalyzer(process.env.GEMINI_API_KEY || '');
@@ -71,7 +76,23 @@ const projectReportGenerator = new ProjectReportGenerator(process.env.GEMINI_API
 // MongoDBへの接続
 mongoose.connect(process.env.MONGODB_URI || 'mongodb://localhost:27017/comment-system')
   .then(() => console.log('MongoDB connected'))
-  .catch((err) => console.error('MongoDB connection error:', err));
+  .catch((err) => {
+    console.error('MongoDB connection error:', err);
+    process.exit(1);
+  });
+
+// MongoDB接続監視
+mongoose.connection.on('disconnected', () => {
+  console.log('MongoDB disconnected');
+});
+
+mongoose.connection.on('error', (err) => {
+  console.error('MongoDB connection error:', err);
+});
+
+mongoose.connection.on('reconnected', () => {
+  console.log('MongoDB reconnected');
+});
 
 // APIエンドポイント
 

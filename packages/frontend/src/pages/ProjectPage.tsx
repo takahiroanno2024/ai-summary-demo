@@ -2,6 +2,7 @@ import { useEffect, useState, useMemo } from 'react';
 import { useParams, useLocation, useNavigate, Link } from 'react-router-dom';
 import { Project } from '../types/project';
 import { Comment, CommentSourceType } from '../types/comment';
+import { ChatPage } from './ChatPage';
 import { CommentList } from '../components/CommentList';
 import { ProjectQuestionsAndStances } from '../components/ProjectQuestionsAndStances';
 import { CommentForm } from '../components/CommentForm';
@@ -241,16 +242,7 @@ export const ProjectPage = () => {
           <ProjectAnalytics project={project} />
         )}
 
-        {activeTab === 'chat' && (
-          <div className="bg-white rounded-lg shadow-sm p-6">
-            <h2 className="text-xl font-semibold text-gray-900 mb-4">
-              チャット
-            </h2>
-            <p className="text-gray-500">
-              準備中...
-            </p>
-          </div>
-        )}
+        {activeTab === 'chat' && <ChatPage />}
       </div>
     </div>
   );
