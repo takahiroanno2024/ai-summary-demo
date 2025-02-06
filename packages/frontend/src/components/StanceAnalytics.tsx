@@ -1,5 +1,6 @@
-import { useState, useCallback, useEffect } from 'react';
-import { Comment } from '../types/comment';
+import { useState, useCallback, useEffect, useRef } from 'react';
+import { useNavigate, useLocation } from 'react-router-dom';
+import { Comment, CommentSourceType } from '../types/comment';
 import { Project, Question, StanceAnalysisReport } from '../types/project';
 import { PieChart, Pie, Cell, ResponsiveContainer, Legend, Tooltip } from 'recharts';
 import ReactMarkdown from 'react-markdown';
@@ -9,6 +10,7 @@ import { API_URL } from '../config/api';
 interface StanceAnalyticsProps {
   comments: Comment[];
   project: Project;
+  initialQuestionId?: string | null;
 }
 
 interface StanceStats {
@@ -41,10 +43,35 @@ const CustomTooltip = ({ active, payload }: any) => {
   return null;
 };
 
-export const StanceAnalytics = ({ comments, project }: StanceAnalyticsProps) => {
-  const [selectedQuestion, setSelectedQuestion] = useState<Question | null>(
-    project.questions.length > 0 ? project.questions[0] : null
-  );
+export const StanceAnalytics = ({ comments, project, initialQuestionId }: StanceAnalyticsProps) => {
+  const navigate = useNavigate();
+  const location = useLocation();
+  
+  const [selectedQuestion, setSelectedQuestion] = useState<Question | null>(() => {
+    if (initialQuestionId) {
+      const question = project.questions.find(q => q.id === initialQuestionId);
+      if (question) return question;
+    }
+    return project.questions.length > 0 ? project.questions[0] : null;
+  });
+
+  // Update URL when question changes
+  const handleQuestionChange = (question: Question) => {
+    setSelectedQuestion(question);
+    const searchParams = new URLSearchParams(location.search);
+    searchParams.set('question', question.id);
+    navigate(`${location.pathname}?${searchParams.toString()}`, { replace: true });
+  };
+
+  // Create ref for scrolling
+  const questionRef = useRef<HTMLDivElement>(null);
+
+  // Scroll to question when selected
+  useEffect(() => {
+    if (questionRef.current) {
+      questionRef.current.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+  }, [selectedQuestion]);
   const [analysisReport, setAnalysisReport] = useState<StanceAnalysisReport | null>(null);
   const [isLoadingReport, setIsLoadingReport] = useState(false);
   const [expandedStances, setExpandedStances] = useState<Record<string, boolean>>({});
@@ -110,6 +137,34 @@ export const StanceAnalytics = ({ comments, project }: StanceAnalyticsProps) => 
     return stats;
   };
 
+  // データソースタイプに応じたスタイルを取得する関数
+  const getSourceTypeStyle = (sourceType: CommentSourceType) => {
+    switch (sourceType) {
+      case 'youtube':
+        return 'bg-red-100 text-red-800';
+      case 'x':
+        return 'bg-gray-900 text-white';
+      case 'form':
+        return 'bg-blue-100 text-blue-800';
+      default:
+        return 'bg-gray-100 text-gray-800';
+    }
+  };
+
+  // データソースタイプの表示名を取得する関数
+  const getSourceTypeName = (sourceType: CommentSourceType) => {
+    switch (sourceType) {
+      case 'youtube':
+        return 'YouTube';
+      case 'x':
+        return 'X (Twitter)';
+      case 'form':
+        return 'フォーム';
+      default:
+        return 'その他';
+    }
+  };
+
   // 立場の名前を取得する関数
   const getStanceName = (stanceId: string): string => {
     if (stanceId === 'other') return 'その他の立場';
@@ -142,7 +197,7 @@ export const StanceAnalytics = ({ comments, project }: StanceAnalyticsProps) => 
             <button
               key={question.id}
               onClick={() => {
-                setSelectedQuestion(question);
+                handleQuestionChange(question);
                 setAnalysisReport(null); // 論点が変更されたらレポートをリセット
               }}
               className={`
@@ -161,7 +216,7 @@ export const StanceAnalytics = ({ comments, project }: StanceAnalyticsProps) => 
       </div>
 
       {/* 選択された論点の内容 */}
-      <div className="bg-white p-4 rounded-lg shadow-sm border border-gray-200">
+      <div ref={questionRef} className="bg-white p-4 rounded-lg shadow-sm border border-gray-200">
         <h3 className="text-lg font-medium text-gray-900 mb-4">
           {selectedQuestion.text}
         </h3>
@@ -222,7 +277,38 @@ export const StanceAnalytics = ({ comments, project }: StanceAnalyticsProps) => 
                               ${!expandedStances[stanceId] && index === 2 ? 'relative' : ''}
                             `}
                           >
-                            {comment.extractedContent}
+                            <div className="flex items-center justify-between">
+                              <div className="flex-1">
+                                {comment.extractedContent}
+                              </div>
+                              {comment.sourceType && (
+                                <div className="ml-2 flex-shrink-0">
+                                  <div className="group relative">
+                                    {comment.sourceUrl ? (
+                                      <a
+                                        href={comment.sourceUrl}
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium hover:opacity-80 ${getSourceTypeStyle(comment.sourceType)}`}
+                                      >
+                                        {getSourceTypeName(comment.sourceType)}
+                                      </a>
+                                    ) : (
+                                      <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${getSourceTypeStyle(comment.sourceType)}`}>
+                                        {getSourceTypeName(comment.sourceType)}
+                                      </span>
+                                    )}
+                                    <div className="invisible group-hover:visible absolute z-10 w-64 p-2 mt-2 text-sm bg-gray-900 text-white rounded shadow-lg right-0">
+                                      {comment.sourceType === 'x' ? (
+                                        'X(Twitter)の規約上、元のコンテンツを表示できません。リンクから元の投稿をご確認ください。'
+                                      ) : (
+                                        comment.content || '元のコンテンツがありません'
+                                      )}
+                                    </div>
+                                  </div>
+                                </div>
+                              )}
+                            </div>
                             {!expandedStances[stanceId] && index === 2 && stats.comments.length > 3 && (
                               <div className="absolute inset-0 bg-gradient-to-b from-transparent via-white/60 to-white" />
                             )}

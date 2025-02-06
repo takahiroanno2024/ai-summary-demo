@@ -58,10 +58,31 @@ export class StanceReportGenerator {
     projectId: string,
     questionId: string
   ): Promise<IStanceAnalysis | null> {
-    return StanceAnalysis.findOne({
+    const analysis = await StanceAnalysis.findOne({
       projectId: new mongoose.Types.ObjectId(projectId),
       questionId
-    });
+    }).lean();
+
+    if (analysis) {
+      // MongoDBのMapをプレーンなオブジェクトに変換
+      const plainStanceAnalysis: {
+        [key: string]: {
+          count: number;
+          comments: string[];
+        };
+      } = {};
+      for (const [key, value] of Object.entries(analysis.stanceAnalysis)) {
+        plainStanceAnalysis[key] = {
+          count: Number(value.count),  // 確実に数値型に変換
+          comments: value.comments
+        };
+      }
+      return {
+        ...analysis,
+        stanceAnalysis: plainStanceAnalysis
+      };
+    }
+    return null;
   }
 
   async analyzeStances(
@@ -76,11 +97,15 @@ export class StanceReportGenerator {
     if (!forceRegenerate) {
       const existingAnalysis = await this.getAnalysis(projectId, questionId);
       if (existingAnalysis) {
-        return {
+        console.log('Using existing analysis:', JSON.stringify(existingAnalysis, null, 2));
+        console.log('Existing stanceAnalysis:', JSON.stringify(existingAnalysis.stanceAnalysis, null, 2));
+        const result = {
           question: questionText,
           stanceAnalysis: existingAnalysis.stanceAnalysis,
           analysis: existingAnalysis.analysis
         };
+        console.log('Returning existing analysis result:', JSON.stringify(result, null, 2));
+        return result;
       }
     }
 

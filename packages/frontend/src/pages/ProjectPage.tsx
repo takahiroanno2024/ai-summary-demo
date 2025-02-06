@@ -20,6 +20,9 @@ export const ProjectPage = () => {
   const location = useLocation();
   const navigate = useNavigate();
   
+  const searchParams = new URLSearchParams(location.search);
+  const questionId = searchParams.get('question');
+
   const activeTab = useMemo(() => {
     const path = location.pathname.split('/').pop();
     if (path === 'comments' || path === 'analytics' || path === 'overall' || path === 'chat') {
@@ -31,9 +34,14 @@ export const ProjectPage = () => {
   // 初期リダイレクト
   useEffect(() => {
     if (location.pathname === `/projects/${projectId}`) {
-      navigate(`/projects/${projectId}/comments`);
+      // If question ID is provided, redirect to analytics tab
+      if (questionId) {
+        navigate(`/projects/${projectId}/analytics?question=${questionId}`);
+      } else {
+        navigate(`/projects/${projectId}/comments`);
+      }
     }
-  }, [projectId, location.pathname, navigate]);
+  }, [projectId, location.pathname, navigate, questionId]);
 
   const fetchProject = async () => {
     try {
@@ -124,17 +132,17 @@ export const ProjectPage = () => {
       <div className="border-b border-gray-200 mb-8">
         <nav className="-mb-px flex space-x-8" aria-label="Tabs">
           <Link
-            to={`/projects/${projectId}/comments`}
+            to={`/projects/${projectId}/overall`}
             className={`
               whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm
               ${
-                activeTab === 'comments'
+                activeTab === 'overall'
                   ? 'border-blue-500 text-blue-600'
                   : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
               }
             `}
           >
-            コメント一覧
+            全体の分析
           </Link>
           <Link
             to={`/projects/${projectId}/analytics`}
@@ -150,17 +158,17 @@ export const ProjectPage = () => {
             論点ごとの分析
           </Link>
           <Link
-            to={`/projects/${projectId}/overall`}
+            to={`/projects/${projectId}/comments`}
             className={`
               whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm
               ${
-                activeTab === 'overall'
+                activeTab === 'comments'
                   ? 'border-blue-500 text-blue-600'
                   : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
               }
             `}
           >
-            全体の分析
+            コメント一覧
           </Link>
           <Link
             to={`/projects/${projectId}/chat`}
@@ -234,7 +242,11 @@ export const ProjectPage = () => {
                 }}
               />
             </div>
-            <StanceAnalytics comments={comments} project={project} />
+            <StanceAnalytics
+              comments={comments}
+              project={project}
+              initialQuestionId={questionId}
+            />
           </>
         )}
 

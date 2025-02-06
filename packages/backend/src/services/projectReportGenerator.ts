@@ -64,7 +64,7 @@ ${qa.analysis}
 """
 # [プロジェクト名]の分析レポート
 
-本レポートはX, YouTube, フォーム等から収集された${questionAnalyses.reduce((total, qa) => total + Object.values(qa.stanceAnalysis).reduce((sum, stance) => sum + stance.count, 0), 0)}件のコメントを元に、議論を集約・分析したものです。
+本レポートはX, YouTube, フォーム等から収集された${questionAnalyses.reduce((total, qa) => total + Object.values(qa.stanceAnalysis).reduce((sum, stance) => sum + (stance?.count || 0), 0), 0)}件のコメントを元に、議論を集約・分析したものです。
 [全体像を2~3文で要約]
 
 ## 1. 主要な論点と対立軸
@@ -154,8 +154,10 @@ ${qa.analysis}
       console.log('No existing analysis found or force regenerate is true');
 
       // 各質問の分析を実行(全体分析のための入力として使用)
+      console.log('Generating question analyses...');
       const questionAnalyses = await Promise.all(
         project.questions.map(async question => {
+          console.log(`Analyzing question: ${question.text}`);
           const analysis = await this.stanceReportGenerator.analyzeStances(
             project._id.toString(),
             question.text,
@@ -164,13 +166,17 @@ ${qa.analysis}
             question.id
           );
 
-          return {
+          console.log('Stance analysis result:', JSON.stringify(analysis.stanceAnalysis, null, 2));
+          const result = {
             question: question.text,
             stanceAnalysis: analysis.stanceAnalysis,
             analysis: analysis.analysis
           };
+          console.log('Question analysis result:', JSON.stringify(result, null, 2));
+          return result;
         })
       );
+      console.log('All question analyses:', JSON.stringify(questionAnalyses, null, 2));
 
       // プロジェクト全体の分析を生成
       const prompt = await this.generateOverallAnalysisPrompt(project, questionAnalyses);

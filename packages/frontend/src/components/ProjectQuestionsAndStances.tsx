@@ -1,3 +1,4 @@
+import { Link } from 'react-router-dom';
 import { Project } from '../types/project';
 
 interface ProjectQuestionsAndStancesProps {
@@ -14,7 +15,13 @@ export const ProjectQuestionsAndStances = ({ project }: ProjectQuestionsAndStanc
           <ul className="list-disc pl-5 space-y-2">
             {project.questions.map((question, index) => (
               <li key={question.id}>
-                <span className="font-medium">論点 {index + 1}:</span> {question.text}
+                <span className="font-medium">論点 {index + 1}:</span>{' '}
+                <Link
+                  to={`/projects/${project._id}/analytics?question=${question.id}`}
+                  className="text-blue-600 hover:text-blue-800 hover:underline"
+                >
+                  {question.text}
+                </Link>
                 <div className="mt-1 flex flex-wrap gap-1">
                   {question.stances.map(stance => (
                     <span
