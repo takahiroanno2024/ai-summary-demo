@@ -6,6 +6,7 @@ import { PieChart, Pie, Cell, ResponsiveContainer, Legend, Tooltip } from 'recha
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import { API_URL } from '../config/api';
+import { convertBoldBrackets } from '../utils/markdownHelper';
 
 interface StanceAnalyticsProps {
   comments: Comment[];
@@ -389,7 +390,7 @@ export const StanceAnalytics = ({ comments, project, initialQuestionId }: Stance
         ) : analysisReport ? (
           <div className="mb-8 bg-white p-6 rounded-lg border border-gray-200 shadow-sm">
             <div className="prose prose-sm max-w-none">
-              <ReactMarkdown remarkPlugins={[remarkGfm]} className="markdown">{analysisReport.analysis}</ReactMarkdown>
+              <ReactMarkdown remarkPlugins={[remarkGfm]} className="markdown">{convertBoldBrackets(analysisReport.analysis)}</ReactMarkdown>
             </div>
           </div>
         ) : null}

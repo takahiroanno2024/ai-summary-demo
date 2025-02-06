@@ -3,6 +3,7 @@ import { Project } from '../types/project';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import { API_URL } from '../config/api';
+import { convertBoldBrackets } from '../utils/markdownHelper';
 
 interface ProjectAnalyticsProps {
   project: Project;
@@ -105,7 +106,7 @@ export const ProjectAnalytics = ({ project }: ProjectAnalyticsProps) => {
         </div>
         <div className="prose prose-sm max-w-none">
           <ReactMarkdown remarkPlugins={[remarkGfm]} className="markdown">
-            {analysisResult.overallAnalysis}
+            {convertBoldBrackets(analysisResult.overallAnalysis)}
           </ReactMarkdown>
         </div>
       </div>
