@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Project, Question } from '../types/project';
+import { Project } from '../types/project';
 import { ProjectList } from '../components/ProjectList';
 import { ProjectForm } from '../components/ProjectForm';
 import { API_URL } from '../config/api';
@@ -25,7 +25,7 @@ export const HomePage = () => {
     name: string,
     description: string,
     extractionTopic: string,
-    questions: Question[]
+    questions: any[]
   ) => {
     try {
       const method = editingProject ? 'PUT' : 'POST';
