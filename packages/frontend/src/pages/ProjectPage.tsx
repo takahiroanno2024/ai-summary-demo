@@ -17,6 +17,7 @@ export const ProjectPage = () => {
   const [comments, setComments] = useState<Comment[]>([]);
   const [error, setError] = useState<string>('');
   const [isLoading, setIsLoading] = useState(true);
+  const [isAdmin, setIsAdmin] = useState(() => !!localStorage.getItem('adminKey'));
   const location = useLocation();
   const navigate = useNavigate();
   
@@ -34,7 +35,6 @@ export const ProjectPage = () => {
   // 初期リダイレクト
   useEffect(() => {
     if (location.pathname === `/projects/${projectId}`) {
-      // If question ID is provided, redirect to analytics tab
       if (questionId) {
         navigate(`/projects/${projectId}/analytics?question=${questionId}`);
       } else {
@@ -69,22 +69,37 @@ export const ProjectPage = () => {
 
   const handleSubmitComment = async (data: { content: string; sourceType?: CommentSourceType; sourceUrl?: string }) => {
     try {
+      const headers: Record<string, string> = {
+        'Content-Type': 'application/json',
+      };
+      const adminKey = localStorage.getItem('adminKey');
+      if (adminKey) {
+        headers['x-api-key'] = adminKey;
+      }
+
       const response = await fetch(`${API_URL}/projects/${projectId}/comments`, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers,
         body: JSON.stringify(data),
       });
 
       if (!response.ok) throw new Error('コメントの投稿に失敗しました');
       await fetchComments();
-      setError(''); // 成功したらエラーをクリア
+      setError('');
     } catch (err) {
       setError(err instanceof Error ? err.message : '予期せぬエラーが発生しました');
       throw err;
     }
   };
+
+  // AdminKeyの変更を監視
+  useEffect(() => {
+    const handleStorageChange = () => {
+      setIsAdmin(!!localStorage.getItem('adminKey'));
+    };
+    window.addEventListener('storage', handleStorageChange);
+    return () => window.removeEventListener('storage', handleStorageChange);
+  }, []);
 
   useEffect(() => {
     if (projectId) {
@@ -189,15 +204,18 @@ export const ProjectPage = () => {
       <div className="mt-8">
         {activeTab === 'comments' && (
           <>
-            <div className="bg-white rounded-lg shadow-sm p-6 mb-8">
-              <h2 className="text-xl font-semibold text-gray-900 mb-4">
-                新規コメント
-              </h2>
-              <CommentForm
-                onSubmit={handleSubmitComment}
-                project={project}
-              />
-            </div>
+            {isAdmin && (
+              <div className="bg-white rounded-lg shadow-sm p-6 mb-8">
+                <h2 className="text-xl font-semibold text-gray-900 mb-4">
+                  新規コメント
+                </h2>
+                <CommentForm
+                  onSubmit={handleSubmitComment}
+                  project={project}
+                  isAdmin={isAdmin}
+                />
+              </div>
+            )}
 
             <div className="bg-white rounded-lg shadow-sm p-6 mb-8">
               <ProjectQuestionsAndStances project={project} />
@@ -208,40 +226,47 @@ export const ProjectPage = () => {
 
         {activeTab === 'analytics' && (
           <>
-            <div className="mb-6">
-              <QuestionGenerationButton
-                isGenerating={isLoading}
-                onGenerate={async () => {
-                  setIsLoading(true);
-                  try {
-                    const response = await fetch(
-                      `${API_URL}/projects/${projectId}/generate-questions`,
-                      {
-                        method: 'POST',
-                        headers: {
-                          'Content-Type': 'application/json',
-                        },
+            {isAdmin && (
+              <div className="mb-6">
+                <QuestionGenerationButton
+                  isGenerating={isLoading}
+                  onGenerate={async () => {
+                    setIsLoading(true);
+                    try {
+                      const headers: Record<string, string> = {
+                        'Content-Type': 'application/json',
+                      };
+                      const adminKey = localStorage.getItem('adminKey');
+                      if (adminKey) {
+                        headers['x-api-key'] = adminKey;
                       }
-                    );
 
-                    if (!response.ok) {
-                      const error = await response.json();
-                      throw new Error(error.message || '論点の生成に失敗しました');
+                      const response = await fetch(
+                        `${API_URL}/projects/${projectId}/generate-questions`,
+                        {
+                          method: 'POST',
+                          headers,
+                        }
+                      );
+
+                      if (!response.ok) {
+                        const error = await response.json();
+                        throw new Error(error.message || '論点の生成に失敗しました');
+                      }
+
+                      const updatedProject = await response.json();
+                      setProject(updatedProject);
+                      await fetchComments();
+                      setError('');
+                    } catch (err) {
+                      setError(err instanceof Error ? err.message : '論点の生成に失敗しました');
+                    } finally {
+                      setIsLoading(false);
                     }
-
-                    const updatedProject = await response.json();
-                    setProject(updatedProject);
-                    // 論点が更新されたので、コメントも再取得
-                    await fetchComments();
-                    setError('');
-                  } catch (err) {
-                    setError(err instanceof Error ? err.message : '論点の生成に失敗しました');
-                  } finally {
-                    setIsLoading(false);
-                  }
-                }}
-              />
-            </div>
+                  }}
+                />
+              </div>
+            )}
             <StanceAnalytics
               comments={comments}
               project={project}

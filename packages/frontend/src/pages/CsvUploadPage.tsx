@@ -1,4 +1,5 @@
-import React, { useState, useCallback, useRef } from 'react';
+import React, { useState, useCallback, useRef, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { API_URL } from '../config/api';
 import { CommentSourceType } from '../types/comment';
 import Papa from 'papaparse';
@@ -10,8 +11,10 @@ interface CsvRow {
   sourceUrl: string;
 }
 
-
 const CsvUploadPage: React.FC = () => {
+  const navigate = useNavigate();
+  const [isAdmin, setIsAdmin] = useState(() => !!localStorage.getItem('adminKey'));
+
   // Project form states
   const [projectName, setProjectName] = useState<string>('');
   const [projectDescription, setProjectDescription] = useState<string>('');
@@ -32,6 +35,26 @@ const CsvUploadPage: React.FC = () => {
   const [currentStep, setCurrentStep] = useState<'project' | 'upload' | 'questions' | 'complete'>('project');
   
   const abortControllerRef = useRef<AbortController | null>(null);
+
+  // Admin権限チェック
+  useEffect(() => {
+    if (!isAdmin) {
+      navigate('/');
+    }
+  }, [isAdmin, navigate]);
+
+  // AdminKeyの変更を監視
+  useEffect(() => {
+    const handleStorageChange = () => {
+      const hasAdminKey = !!localStorage.getItem('adminKey');
+      setIsAdmin(hasAdminKey);
+      if (!hasAdminKey) {
+        navigate('/');
+      }
+    };
+    window.addEventListener('storage', handleStorageChange);
+    return () => window.removeEventListener('storage', handleStorageChange);
+  }, [navigate]);
 
   const handleFileSelect = useCallback((event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
@@ -78,11 +101,17 @@ const CsvUploadPage: React.FC = () => {
     setStatus('プロジェクトを作成中...');
 
     try {
+      const headers: Record<string, string> = {
+        'Content-Type': 'application/json',
+      };
+      const adminKey = localStorage.getItem('adminKey');
+      if (adminKey) {
+        headers['x-api-key'] = adminKey;
+      }
+
       const response = await fetch(`${API_URL}/projects`, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers,
         body: JSON.stringify({
           name: projectName,
           description: projectDescription,
@@ -125,11 +154,17 @@ const CsvUploadPage: React.FC = () => {
       }));
 
       try {
+        const headers: Record<string, string> = {
+          'Content-Type': 'application/json',
+        };
+        const adminKey = localStorage.getItem('adminKey');
+        if (adminKey) {
+          headers['x-api-key'] = adminKey;
+        }
+
         const response = await fetch(`${API_URL}/projects/${currentProjectId}/comments/bulk`, {
           method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
+          headers,
           body: JSON.stringify({ comments }),
         });
 
@@ -191,8 +226,17 @@ const CsvUploadPage: React.FC = () => {
     setStatus('質問を生成中...');
 
     try {
+      const headers: Record<string, string> = {
+        'Content-Type': 'application/json',
+      };
+      const adminKey = localStorage.getItem('adminKey');
+      if (adminKey) {
+        headers['x-api-key'] = adminKey;
+      }
+
       const response = await fetch(`${API_URL}/projects/${currentProjectId}/generate-questions`, {
         method: 'POST',
+        headers,
       });
 
       if (!response.ok) {
@@ -215,6 +259,10 @@ const CsvUploadPage: React.FC = () => {
     setProgress(0);
     setStatus('処理がキャンセルされました');
   }, []);
+
+  if (!isAdmin) {
+    return null;
+  }
 
   return (
     <div className="container mx-auto p-4">
@@ -332,7 +380,7 @@ const CsvUploadPage: React.FC = () => {
       {currentStep === 'questions' && !isProcessing && (
         <div className="space-y-4">
           <p className="text-gray-700">
-            コメントのアップロードが完了しました。論点を生成し、立場をラベル付けしますか？
+            コメントのアップロードが完了しました。論点を生成し、立場をラベル付けしますか?
           </p>
           <button
             onClick={generateQuestions}

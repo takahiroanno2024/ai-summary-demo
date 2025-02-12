@@ -7,6 +7,7 @@ import projectRouter from './routes/projects';
 import commentRouter from './routes/comments';
 import analysisRouter from './routes/analysis';
 import { errorHandler } from './middleware/errorHandler';
+import { authMiddleware } from './middleware/authMiddleware';
 
 dotenv.config();
 
@@ -16,6 +17,7 @@ const port = process.env.PORT || 3001;
 // ミドルウェアの設定
 app.use(cors());
 app.use(express.json());
+app.use('/api', authMiddleware); // 全APIルートに認可ミドルウェアを適用
 
 // MongoDBへの接続
 mongoose.connect(process.env.MONGODB_URI || 'mongodb://localhost:27017/comment-system')

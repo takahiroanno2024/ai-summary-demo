@@ -7,13 +7,23 @@ export const getApiUrl = () => {
 
 export const API_URL = getApiUrl();
 
+const getHeaders = (contentType = true) => {
+  const headers: Record<string, string> = {};
+  if (contentType) {
+    headers['Content-Type'] = 'application/json';
+  }
+  const adminKey = localStorage.getItem('adminKey');
+  if (adminKey) {
+    headers['x-api-key'] = adminKey;
+  }
+  return headers;
+};
+
 // チャットルーム関連のAPI
 export const createChatRoom = async (projectId: string, data: NewChatRoom): Promise<ChatRoom> => {
   const response = await fetch(`${API_URL}/projects/${projectId}/chat-rooms`, {
     method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-    },
+    headers: getHeaders(),
     body: JSON.stringify(data),
   });
   if (!response.ok) {
@@ -23,7 +33,9 @@ export const createChatRoom = async (projectId: string, data: NewChatRoom): Prom
 };
 
 export const getChatRooms = async (projectId: string): Promise<ChatRoom[]> => {
-  const response = await fetch(`${API_URL}/projects/${projectId}/chat-rooms`);
+  const response = await fetch(`${API_URL}/projects/${projectId}/chat-rooms`, {
+    headers: getHeaders(false),
+  });
   if (!response.ok) {
     throw new Error('Failed to fetch chat rooms');
   }
@@ -31,7 +43,9 @@ export const getChatRooms = async (projectId: string): Promise<ChatRoom[]> => {
 };
 
 export const getChatRoom = async (chatRoomId: string): Promise<ChatRoom> => {
-  const response = await fetch(`${API_URL}/chat-rooms/${chatRoomId}`);
+  const response = await fetch(`${API_URL}/chat-rooms/${chatRoomId}`, {
+    headers: getHeaders(false),
+  });
   if (!response.ok) {
     throw new Error('Failed to fetch chat room');
   }
@@ -42,9 +56,7 @@ export const getChatRoom = async (chatRoomId: string): Promise<ChatRoom> => {
 export const addMessage = async (chatRoomId: string, data: NewChatMessage): Promise<ChatMessage> => {
   const response = await fetch(`${API_URL}/chat-rooms/${chatRoomId}/messages`, {
     method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-    },
+    headers: getHeaders(),
     body: JSON.stringify(data),
   });
   if (!response.ok) {
@@ -54,7 +66,9 @@ export const addMessage = async (chatRoomId: string, data: NewChatMessage): Prom
 };
 
 export const getMessages = async (chatRoomId: string): Promise<ChatMessage[]> => {
-  const response = await fetch(`${API_URL}/chat-rooms/${chatRoomId}/messages`);
+  const response = await fetch(`${API_URL}/chat-rooms/${chatRoomId}/messages`, {
+    headers: getHeaders(false),
+  });
   if (!response.ok) {
     throw new Error('Failed to fetch messages');
   }

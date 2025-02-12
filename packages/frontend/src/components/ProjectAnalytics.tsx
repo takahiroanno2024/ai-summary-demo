@@ -18,13 +18,24 @@ export const ProjectAnalytics = ({ project }: ProjectAnalyticsProps) => {
   const [analysisResult, setAnalysisResult] = useState<ProjectAnalysisResult | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [isAdmin] = useState(() => !!localStorage.getItem('adminKey'));
 
   const fetchAnalysis = useCallback(async (forceRegenerate: boolean = false) => {
     try {
       setIsLoading(true);
       setError(null);
+
+      const headers: Record<string, string> = {};
+      if (forceRegenerate && isAdmin) {
+        const adminKey = localStorage.getItem('adminKey');
+        if (adminKey) {
+          headers['x-api-key'] = adminKey;
+        }
+      }
+
       const response = await fetch(
-        `${API_URL}/projects/${project._id}/analysis?forceRegenerate=${forceRegenerate}`
+        `${API_URL}/projects/${project._id}/analysis?forceRegenerate=${forceRegenerate}`,
+        { headers }
       );
       
       if (!response.ok) {
@@ -38,7 +49,7 @@ export const ProjectAnalytics = ({ project }: ProjectAnalyticsProps) => {
     } finally {
       setIsLoading(false);
     }
-  }, [project._id]);
+  }, [project._id, isAdmin]);
 
   useEffect(() => {
     fetchAnalysis();
@@ -78,31 +89,33 @@ export const ProjectAnalytics = ({ project }: ProjectAnalyticsProps) => {
           <h3 className="text-xl font-semibold text-gray-900">
             プロジェクト全体の分析
           </h3>
-          <button
-            onClick={() => fetchAnalysis(true)}
-            disabled={isLoading}
-            className={`
-              inline-flex items-center px-2 py-1 text-sm font-medium rounded
-              border border-gray-300 bg-white hover:bg-gray-50
-              text-blue-600 hover:text-blue-700
-              ${isLoading ? 'cursor-not-allowed opacity-50' : ''}
-            `}
-          >
-            <svg
-              className={`mr-1 h-4 w-4 ${isLoading ? 'animate-spin' : ''}`}
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
+          {isAdmin && (
+            <button
+              onClick={() => fetchAnalysis(true)}
+              disabled={isLoading}
+              className={`
+                inline-flex items-center px-2 py-1 text-sm font-medium rounded
+                border border-gray-300 bg-white hover:bg-gray-50
+                text-blue-600 hover:text-blue-700
+                ${isLoading ? 'cursor-not-allowed opacity-50' : ''}
+              `}
             >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth="2"
-                d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
-              />
-            </svg>
-            {isLoading ? '再生成中' : '再生成'}
-          </button>
+              <svg
+                className={`mr-1 h-4 w-4 ${isLoading ? 'animate-spin' : ''}`}
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth="2"
+                  d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
+                />
+              </svg>
+              {isLoading ? '再生成中' : '再生成'}
+            </button>
+          )}
         </div>
         <div className="prose prose-sm max-w-none">
           <ReactMarkdown remarkPlugins={[remarkGfm]} className="markdown">
