@@ -19,6 +19,7 @@ const CsvUploadPage: React.FC = () => {
   const [projectName, setProjectName] = useState<string>('');
   const [projectDescription, setProjectDescription] = useState<string>('');
   const [extractionTopic, setExtractionTopic] = useState<string>('');
+  const [context, setContext] = useState<string>('');
   const [currentProjectId, setCurrentProjectId] = useState<string>('');
 
   // File states
@@ -116,6 +117,7 @@ const CsvUploadPage: React.FC = () => {
           name: projectName,
           description: projectDescription,
           extractionTopic,
+          context,
         }),
       });
 
@@ -332,6 +334,19 @@ const CsvUploadPage: React.FC = () => {
                 value={extractionTopic}
                 onChange={(e) => setExtractionTopic(e.target.value)}
                 className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+                disabled={isProcessing}
+              />
+            </label>
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700">
+              プロジェクトの背景情報
+              <textarea
+                value={context}
+                onChange={(e) => setContext(e.target.value)}
+                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+                rows={3}
+                placeholder="プロジェクトに関連する背景情報を入力してください"
                 disabled={isProcessing}
               />
             </label>

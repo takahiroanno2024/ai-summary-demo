@@ -7,12 +7,14 @@ interface ProjectFormProps {
     name: string,
     description: string,
     extractionTopic: string,
+    context: string,
     questions: Question[]
   ) => Promise<void>;
   initialData?: {
     name: string;
     description?: string;
     extractionTopic?: string;
+    context?: string;
     questions?: Question[];
   };
   mode?: 'create' | 'edit';
@@ -22,6 +24,7 @@ export const ProjectForm = ({ onSubmit, initialData, mode = 'create' }: ProjectF
   const [name, setName] = useState(initialData?.name || '');
   const [description, setDescription] = useState(initialData?.description || '');
   const [extractionTopic, setExtractionTopic] = useState(initialData?.extractionTopic || '');
+  const [context, setContext] = useState(initialData?.context || '');
   const [questions, setQuestions] = useState<Question[]>(initialData?.questions || []);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -93,11 +96,12 @@ export const ProjectForm = ({ onSubmit, initialData, mode = 'create' }: ProjectF
 
     setIsSubmitting(true);
     try {
-      await onSubmit(name, description, extractionTopic, questions);
+      await onSubmit(name, description, extractionTopic, context, questions);
       if (mode === 'create') {
         setName('');
         setDescription('');
         setExtractionTopic('');
+        setContext('');
         setQuestions([]);
       }
     } catch (error) {
@@ -144,6 +148,20 @@ export const ProjectForm = ({ onSubmit, initialData, mode = 'create' }: ProjectF
           onChange={(e) => setExtractionTopic(e.target.value)}
           rows={3}
           placeholder="コメントから抽出したい内容のトピックを入力してください"
+          className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+        />
+      </div>
+
+      <div>
+        <label htmlFor="context" className="block text-sm font-medium text-gray-700">
+          プロジェクトの背景情報
+        </label>
+        <textarea
+          id="context"
+          value={context}
+          onChange={(e) => setContext(e.target.value)}
+          rows={3}
+          placeholder="プロジェクトに関連する背景情報を入力してください"
           className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
         />
       </div>

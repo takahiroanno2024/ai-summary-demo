@@ -57,6 +57,7 @@ export const ProjectListPage = () => {
     name: string,
     description: string,
     extractionTopic: string,
+    context: string,
     questions: any[]
   ) => {
     try {
@@ -80,6 +81,7 @@ export const ProjectListPage = () => {
           name,
           description,
           extractionTopic,
+          context,
           questions,
         }),
       });

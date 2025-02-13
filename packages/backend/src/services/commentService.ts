@@ -34,7 +34,7 @@ export class CommentService {
       throw new AppError(404, 'Project not found');
     }
 
-    const extractedContent = await extractContent(commentData.content, project.extractionTopic);
+    const extractedContent = await extractContent(commentData.content, project.extractionTopic, project.context);
     const analysisResults = extractedContent === null ? [] : await this.stanceAnalyzer.analyzeAllStances(
       extractedContent,
       project.questions.map(q => ({
@@ -42,7 +42,8 @@ export class CommentService {
         text: q.text,
         stances: q.stances,
       })),
-      [] // 新規コメントなので空の配列を渡す
+      [], // 新規コメントなので空の配列を渡す
+      project.context // プロジェクトのcontextを渡す
     );
 
     const stances = this.filterValidStances(analysisResults);
@@ -79,7 +80,7 @@ export class CommentService {
         const sourceType = typeof comment === 'string' ? 'other' : (comment.sourceType || 'other');
         const sourceUrl = typeof comment === 'string' ? '' : (comment.sourceUrl || '');
 
-        const extractedContent = await extractContent(content, project.extractionTopic);
+        const extractedContent = await extractContent(content, project.extractionTopic, project.context);
         const analysisResults = extractedContent !== null
           ? await this.stanceAnalyzer.analyzeAllStances(
               extractedContent,
@@ -88,7 +89,8 @@ export class CommentService {
                 text: q.text,
                 stances: q.stances,
               })),
-              [] // 新規コメントなので空の配列を渡す
+              [], // 新規コメントなので空の配列を渡す
+              project.context // プロジェクトのcontextを渡す
             )
           : [];
 

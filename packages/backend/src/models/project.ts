@@ -16,6 +16,7 @@ export interface IProject {
   name: string;
   description?: string;
   extractionTopic?: string;
+  context?: string;
   questions: IQuestion[];
   createdAt: Date;
 }
@@ -60,6 +61,10 @@ const projectSchema = new mongoose.Schema<IProject>({
     trim: true,
   },
   extractionTopic: {
+    type: String,
+    trim: true,
+  },
+  context: {
     type: String,
     trim: true,
   },

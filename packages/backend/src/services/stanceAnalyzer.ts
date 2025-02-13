@@ -26,13 +26,19 @@ export class StanceAnalyzer {
   private async generatePrompt(
     comment: string,
     questionText: string,
-    stances: { id: string; name: string }[]
+    stances: { id: string; name: string }[],
+    context?: string
   ): Promise<string> {
     const stanceOptions = stances.map(s => s.name).join('", "');
     return `
 以下のコメントに対して、論点「${questionText}」について、コメントがどの立場を取っているか分析してください。立場が明確でなければ「立場なし」を選択してください。
 
-コメント:
+${context ? `背景情報:
+"""
+${context}
+"""
+
+` : ''}コメント:
 """
 ${comment}
 """
@@ -91,7 +97,8 @@ ${comment}
     comment: string,
     questionId: string,
     questionText: string,
-    stances: { id: string; name: string }[]
+    stances: { id: string; name: string }[],
+    context?: string
   ): Promise<StanceAnalysisResult> {
     let retryCount = 0;
     const maxRetries = 2;
@@ -101,7 +108,7 @@ ${comment}
         // 特殊な立場を確実に含める
         const stancesWithSpecial = this.ensureSpecialStances(stances);
         
-        const prompt = await this.generatePrompt(comment, questionText, stancesWithSpecial);
+        const prompt = await this.generatePrompt(comment, questionText, stancesWithSpecial, context);
         console.log('Generated Prompt:', prompt);
         
         await this.enforceRateLimit();
@@ -175,7 +182,8 @@ ${comment}
   async analyzeAllStances(
     comment: string,
     questions: Array<{ id: string; text: string; stances: Array<{ id: string; name: string }> }>,
-    existingStances: StanceAnalysisResult[] = []
+    existingStances: StanceAnalysisResult[] = [],
+    context?: string
   ): Promise<StanceAnalysisResult[]> {
     // 新しい論点と既存の分析結果をマッピング
     const existingStanceMap = new Map(
@@ -192,7 +200,7 @@ ${comment}
         }
 
         // 新しい論点に対してのみ分析を実行
-        return this.analyzeStance(comment, question.id, question.text, question.stances);
+        return this.analyzeStance(comment, question.id, question.text, question.stances, context);
       })
     );
 

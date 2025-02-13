@@ -15,7 +15,7 @@ async function sleep(ms: number): Promise<void> {
   return new Promise(resolve => setTimeout(resolve, ms));
 }
 
-async function isRelevantToTopic(content: string, topic: string): Promise<boolean> {
+async function isRelevantToTopic(content: string, topic: string, context?: string): Promise<boolean> {
   let retries = 0;
   
   while (true) {
@@ -24,12 +24,17 @@ async function isRelevantToTopic(content: string, topic: string): Promise<boolea
 
 Your task is to determine if the following comment is relevant to the topic of "${topic}".
 
-Comment to analyze:
+${context ? `Background context about the topic:
+"""
+${context}
+"""
+
+` : ''}Comment to analyze:
 """
 ${content}
 """
 
-Please respond with either "RELEVANT" or "NOT_RELEVANT". Consider a comment relevant if it expresses any opinion or argument related to the topic.`;
+Please respond with either "RELEVANT" or "NOT_RELEVANT". Consider a comment relevant if it expresses any opinion or argument related to the topic, taking into account the provided background context if available.`;
 
       console.log('Relevance Check LLM Input:', prompt);
 
@@ -64,7 +69,7 @@ Please respond with either "RELEVANT" or "NOT_RELEVANT". Consider a comment rele
   }
 }
 
-export async function extractContent(content: string, extractionTopic?: string): Promise<string | null> {
+export async function extractContent(content: string, extractionTopic?: string, context?: string): Promise<string | null> {
   if (!extractionTopic) {
     return null;
   }
@@ -74,7 +79,7 @@ export async function extractContent(content: string, extractionTopic?: string):
   while (true) {
     try {
       // First check if the content is relevant to the topic
-      const isRelevant = await isRelevantToTopic(content, extractionTopic);
+      const isRelevant = await isRelevantToTopic(content, extractionTopic, context);
       if (!isRelevant) {
         return null;
       }
@@ -82,7 +87,13 @@ export async function extractContent(content: string, extractionTopic?: string):
       // If relevant, proceed with extraction
       const prompt = `あなたはプロのリサーチアシスタントであり、議論のデータセットをきれいに整える手助けをしています。
 与えられたコメントから冗長な表現を排除し、トピックに関する主張を抽出した一人称視点の文章を出力してください。
-  以下に「AI技術」に関するコメントを処理した例を示しますので、同じ方法で「${extractionTopic}」に関する実際のコメントを処理してください。
+${context ? `
+トピックに関する背景情報:
+"""
+${context}
+"""
+
+` : ''}  以下に「AI技術」に関するコメントを処理した例を示しますので、同じ方法で「${extractionTopic}」に関する実際のコメントを処理してください。
 
   「AI技術」に関するコメントを処理した例：
 
