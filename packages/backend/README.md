@@ -1,7 +1,7 @@
 # バックエンドAPI仕様書
 
 ## 概要
-このAPIは、プロジェクト管理、コメント管理、分析機能を提供するRESTful APIです。
+このAPIは、プロジェクト管理、コメント管理、分析レポート生成機能を提供するRESTful APIです。
 
 ## 認証
 全てのAPIエンドポイントは認証システムによって保護されています。認証は`/api`パス以下の全てのルートに適用されます。
@@ -28,15 +28,15 @@ APIは2つのアクセスレベルを提供します:
 - `GET /projects` - プロジェクト一覧の取得
 - `GET /projects/:projectId` - 特定のプロジェクトの取得
 - `GET /projects/:projectId/comments` - プロジェクトのコメント一覧の取得
-- `GET /projects/:projectId/questions/:questionId/stance-analysis` - 立場分析の取得(再生成オプション無効時のみ)
-- `GET /projects/:projectId/analysis` - プロジェクト分析の取得(再生成オプション無効時のみ)
+- `GET /projects/:projectId/questions/:questionId/stance-analysis` - 立場分析レポートの取得(再生成オプション無効時のみ)
+- `GET /projects/:projectId/analysis` - プロジェクト全体の分析レポートの取得(再生成オプション無効時のみ)
 
 ### Admin権限が必要なエンドポイント
 以下の操作にはAdmin APIキーが必要です:
 
 - プロジェクトの作成・更新・削除
 - コメントの追加・一括インポート
-- 分析の強制再生成(forceRegenerate=true)
+- 分析レポートの強制再生成(forceRegenerate=true)
 - 埋め込みデータの操作
 
 ## ベースURL
@@ -169,13 +169,13 @@ POST /projects/:projectId/comments/bulk
   ```
 - レスポンス: インポートされたコメントの配列
 
-### 分析 API
+### 分析レポート API
 
-#### 論点ごとの立場分析
+#### 論点ごとの立場分析レポート
 ```
 GET /projects/:projectId/questions/:questionId/stance-analysis
 ```
-- 説明: 特定の論点に対するコメントの立場分析を取得します
+- 説明: 特定の論点に対するコメントの立場分析レポートを取得します
 - 認証: 
   - 基本取得: 不要
   - 強制再生成: Admin必須
@@ -183,13 +183,13 @@ GET /projects/:projectId/questions/:questionId/stance-analysis
   - projectId (MongoDB ObjectId)
   - questionId (string)
   - forceRegenerate (query, boolean, optional): 強制的に再分析を行うかどうか
-- レスポンス: 立場分析結果
+- レスポンス: 立場分析レポート
 
 #### プロジェクト全体の分析レポート
 ```
 GET /projects/:projectId/analysis
 ```
-- 説明: プロジェクト全体の分析レポートを生成します
+- 説明: プロジェクト全体の包括的な分析レポートを生成します
 - 認証: 
   - 基本取得: 不要
   - 強制再生成: Admin必須
@@ -202,7 +202,7 @@ GET /projects/:projectId/analysis
 ```
 GET /projects/:projectId/export-csv
 ```
-- 説明: プロジェクトのデータをCSV形式でエクスポートします
+- 説明: プロジェクトの分析データをCSV形式でエクスポートします
 - 認証: Admin必須
 - リクエストヘッダー: `x-api-key: <ADMIN_API_KEY>`
 - パラメータ: projectId (MongoDB ObjectId)
