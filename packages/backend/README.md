@@ -98,20 +98,20 @@ PUT /projects/:projectId
     "description": "プロジェクトの説明",
     "extractionTopic": "抽出トピック",
     "context": "コンテキスト情報",
-    "questions": ["質問1", "質問2"]
+    "questions": ["論点1", "論点2"]
   }
   ```
 - レスポンス: 更新されたプロジェクト情報
 
-#### プロジェクトの質問自動生成
+#### プロジェクトの論点自動生成
 ```
 POST /projects/:projectId/generate-questions
 ```
-- 説明: プロジェクトの内容に基づいて質問を自動生成します
+- 説明: プロジェクトの内容に基づいて論点を自動生成します
 - 認証: Admin必須
 - リクエストヘッダー: `x-api-key: <ADMIN_API_KEY>`
 - パラメータ: projectId (MongoDB ObjectId)
-- レスポンス: 更新されたプロジェクト情報(生成された質問を含む)
+- レスポンス: 更新されたプロジェクト情報(生成された論点を含む)
 
 ### コメント管理 API
 
@@ -171,11 +171,11 @@ POST /projects/:projectId/comments/bulk
 
 ### 分析 API
 
-#### 質問ごとの立場分析
+#### 論点ごとの立場分析
 ```
 GET /projects/:projectId/questions/:questionId/stance-analysis
 ```
-- 説明: 特定の質問に対するコメントの立場分析を取得します
+- 説明: 特定の論点に対するコメントの立場分析を取得します
 - 認証: 
   - 基本取得: 不要
   - 強制再生成: Admin必須
@@ -214,7 +214,7 @@ GET /projects/:projectId/export-csv
 ```
 GET /projects/:projectId/questions/:questionId/embeddings
 ```
-- 説明: 特定の質問に関連するコメントの埋め込みベクトルを取得します
+- 説明: 特定の論点に関連するコメントの埋め込みベクトルを取得します
 - 認証: Admin必須
 - リクエストヘッダー: `x-api-key: <ADMIN_API_KEY>`
 - パラメータ:
