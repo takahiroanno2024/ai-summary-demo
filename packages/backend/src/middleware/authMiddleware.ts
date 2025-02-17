@@ -84,10 +84,6 @@ export function authMiddleware(req: Request, res: Response, next: NextFunction) 
         if (!pattern.params.includes(paramName)) {
           return false;
         }
-        // MongoDBのObjectIDの形式チェック(24文字の16進数)
-        if (paramName.endsWith('Id') && !/^[0-9a-fA-F]{24}$/.test(pathPart)) {
-          return false;
-        }
         params[paramName] = pathPart;
       } else if (patternPart !== pathPart) {
         // 固定パスの場合は完全一致が必要
