@@ -18,7 +18,7 @@ export class ProjectReportGenerator {
 
   constructor(apiKey: string) {
     this.genAI = new GoogleGenerativeAI(apiKey);
-    this.model = this.genAI.getGenerativeModel({ model: 'gemini-1.5-pro' });
+    this.model = this.genAI.getGenerativeModel({ model: 'gemini-2.0-flash' });
     this.stanceReportGenerator = new StanceReportGenerator(apiKey);
   }
 
@@ -33,7 +33,8 @@ export class ProjectReportGenerator {
   async generateProjectReport(
     project: IProject & { _id: mongoose.Types.ObjectId },
     comments: IComment[],
-    forceRegenerate: boolean = false
+    forceRegenerate: boolean = false,
+    customPrompt?: string
   ): Promise<ProjectAnalysisResult> {
     try {
       // 強制再生成でない場合のみ既存の分析結果を確認
@@ -59,7 +60,9 @@ export class ProjectReportGenerator {
             question.text,
             comments,
             question.stances,
-            question.id
+            question.id,
+            false,
+            customPrompt
           );
 
           console.log('Stance analysis result:', JSON.stringify(analysis.stanceAnalysis, null, 2));
@@ -80,7 +83,8 @@ export class ProjectReportGenerator {
           name: project.name,
           description: project.description || '' // デフォルト値を設定
         },
-        questionAnalyses
+        questionAnalyses,
+        customPrompt
       );
       const result = await this.model.generateContent(prompt);
       const overallAnalysis = result.response.text();

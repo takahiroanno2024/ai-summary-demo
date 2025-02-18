@@ -5,7 +5,7 @@ import { Project, Question, StanceAnalysisReport } from '../types/project';
 import { PieChart, Pie, Cell, ResponsiveContainer, Legend, Tooltip } from 'recharts';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
-import { API_URL } from '../config/api';
+import { analyzeStances } from '../config/api';
 import { convertBoldBrackets } from '../utils/markdownHelper';
 
 interface StanceAnalyticsProps {
@@ -90,24 +90,7 @@ export const StanceAnalytics = ({ comments, project, initialQuestionId }: Stance
 
     try {
       setIsLoadingReport(true);
-      const headers: Record<string, string> = {};
-      if (forceRegenerate && isAdmin) {
-        const adminKey = localStorage.getItem('adminKey');
-        if (adminKey) {
-          headers['x-api-key'] = adminKey;
-        }
-      }
-
-      const response = await fetch(
-        `${API_URL}/projects/${project._id}/questions/${selectedQuestion.id}/stance-analysis?forceRegenerate=${forceRegenerate}`,
-        { headers }
-      );
-      
-      if (!response.ok) {
-        throw new Error('Failed to fetch analysis report');
-      }
-
-      const report = await response.json();
+      const report = await analyzeStances(project._id, selectedQuestion.id, forceRegenerate);
       setAnalysisReport(report);
     } catch (error) {
       console.error('Error fetching analysis report:', error);

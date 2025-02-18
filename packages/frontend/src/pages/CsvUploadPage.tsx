@@ -1,6 +1,6 @@
 import React, { useState, useCallback, useRef, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { API_URL } from '../config/api';
+import { createProjectWithCsv, uploadCommentsBulk, generateQuestions as generateProjectQuestions } from '../config/api';
 import { CommentSourceType } from '../types/comment';
 import Papa from 'papaparse';
 import type { ParseResult } from 'papaparse';
@@ -102,30 +102,12 @@ const CsvUploadPage: React.FC = () => {
     setStatus('プロジェクトを作成中...');
 
     try {
-      const headers: Record<string, string> = {
-        'Content-Type': 'application/json',
-      };
-      const adminKey = localStorage.getItem('adminKey');
-      if (adminKey) {
-        headers['x-api-key'] = adminKey;
-      }
-
-      const response = await fetch(`${API_URL}/projects`, {
-        method: 'POST',
-        headers,
-        body: JSON.stringify({
-          name: projectName,
-          description: projectDescription,
-          extractionTopic,
-          context,
-        }),
+      const project = await createProjectWithCsv({
+        name: projectName,
+        description: projectDescription,
+        extractionTopic,
+        context,
       });
-
-      if (!response.ok) {
-        throw new Error('プロジェクトの作成に失敗しました');
-      }
-
-      const project = await response.json();
       setCurrentProjectId(project._id);
       setCurrentStep('upload');
       setStatus('プロジェクトが作成されました。CSVファイルをアップロードしてください。');
@@ -156,24 +138,7 @@ const CsvUploadPage: React.FC = () => {
       }));
 
       try {
-        const headers: Record<string, string> = {
-          'Content-Type': 'application/json',
-        };
-        const adminKey = localStorage.getItem('adminKey');
-        if (adminKey) {
-          headers['x-api-key'] = adminKey;
-        }
-
-        const response = await fetch(`${API_URL}/projects/${currentProjectId}/comments/bulk`, {
-          method: 'POST',
-          headers,
-          body: JSON.stringify({ comments }),
-        });
-
-        if (!response.ok) {
-          throw new Error(`APIエラー: ${response.statusText}`);
-        }
-
+        await uploadCommentsBulk(currentProjectId, comments);
         processedBatches++;
         const newProgress = (processedBatches / totalBatches) * 100;
         setProgress(newProgress);
@@ -228,23 +193,7 @@ const CsvUploadPage: React.FC = () => {
     setStatus('質問を生成中...');
 
     try {
-      const headers: Record<string, string> = {
-        'Content-Type': 'application/json',
-      };
-      const adminKey = localStorage.getItem('adminKey');
-      if (adminKey) {
-        headers['x-api-key'] = adminKey;
-      }
-
-      const response = await fetch(`${API_URL}/projects/${currentProjectId}/generate-questions`, {
-        method: 'POST',
-        headers,
-      });
-
-      if (!response.ok) {
-        throw new Error('質問の生成に失敗しました');
-      }
-
+      await generateProjectQuestions(currentProjectId);
       setStatus('質問の生成が完了しました');
       setCurrentStep('complete');
     } catch (error) {

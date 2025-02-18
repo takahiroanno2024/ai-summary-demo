@@ -4,6 +4,7 @@ import { ProjectPage } from './pages/ProjectPage';
 import { ProjectListPage } from './pages/ProjectListPage';
 import { AdminAuthPage } from './pages/AdminAuthPage';
 import CsvUploadPage from './pages/CsvUploadPage';
+import { PromptSettingsPage } from './pages/PromptSettingsPage';
 
 function App() {
   const isAdmin = !!localStorage.getItem('adminKey');
@@ -23,6 +24,9 @@ function App() {
               <Link to="/csv-upload" className="text-blue-500 hover:text-blue-600">
                 CSVアップロード
               </Link>
+              <Link to="/prompt-settings" className="text-blue-500 hover:text-blue-600">
+                プロンプト設定
+              </Link>
             </div>
           </nav>
         )}
@@ -38,6 +42,7 @@ function App() {
           </Route>
           <Route path="/csv-upload" element={<CsvUploadPage />} />
           <Route path="/adminauth" element={<AdminAuthPage />} />
+          <Route path="/prompt-settings" element={<PromptSettingsPage />} />
         </Routes>
       </div>
     </Router>

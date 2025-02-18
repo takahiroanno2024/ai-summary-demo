@@ -9,7 +9,7 @@ import { CommentForm } from '../components/CommentForm';
 import { StanceAnalytics } from '../components/StanceAnalytics';
 import { ProjectAnalytics } from '../components/ProjectAnalytics';
 import { QuestionGenerationButton } from '../components/QuestionGenerationButton';
-import { API_URL } from '../config/api';
+import { getProject, getComments, addComment, generateQuestions } from '../config/api';
 
 export const ProjectPage = () => {
   const { projectId } = useParams<{ projectId: string }>();
@@ -45,9 +45,7 @@ export const ProjectPage = () => {
 
   const fetchProject = async () => {
     try {
-      const response = await fetch(`${API_URL}/projects/${projectId}`);
-      if (!response.ok) throw new Error('プロジェクトの取得に失敗しました');
-      const data = await response.json();
+      const data = await getProject(projectId!);
       setProject(data);
     } catch (err) {
       setError(err instanceof Error ? err.message : '予期せぬエラーが発生しました');
@@ -58,9 +56,7 @@ export const ProjectPage = () => {
 
   const fetchComments = async () => {
     try {
-      const response = await fetch(`${API_URL}/projects/${projectId}/comments`);
-      if (!response.ok) throw new Error('コメントの取得に失敗しました');
-      const data = await response.json();
+      const data = await getComments(projectId!);
       setComments(data);
     } catch (err) {
       setError(err instanceof Error ? err.message : '予期せぬエラーが発生しました');
@@ -69,21 +65,7 @@ export const ProjectPage = () => {
 
   const handleSubmitComment = async (data: { content: string; sourceType?: CommentSourceType; sourceUrl?: string }) => {
     try {
-      const headers: Record<string, string> = {
-        'Content-Type': 'application/json',
-      };
-      const adminKey = localStorage.getItem('adminKey');
-      if (adminKey) {
-        headers['x-api-key'] = adminKey;
-      }
-
-      const response = await fetch(`${API_URL}/projects/${projectId}/comments`, {
-        method: 'POST',
-        headers,
-        body: JSON.stringify(data),
-      });
-
-      if (!response.ok) throw new Error('コメントの投稿に失敗しました');
+      await addComment(projectId!, data);
       await fetchComments();
       setError('');
     } catch (err) {
@@ -233,28 +215,7 @@ export const ProjectPage = () => {
                   onGenerate={async () => {
                     setIsLoading(true);
                     try {
-                      const headers: Record<string, string> = {
-                        'Content-Type': 'application/json',
-                      };
-                      const adminKey = localStorage.getItem('adminKey');
-                      if (adminKey) {
-                        headers['x-api-key'] = adminKey;
-                      }
-
-                      const response = await fetch(
-                        `${API_URL}/projects/${projectId}/generate-questions`,
-                        {
-                          method: 'POST',
-                          headers,
-                        }
-                      );
-
-                      if (!response.ok) {
-                        const error = await response.json();
-                        throw new Error(error.message || '論点の生成に失敗しました');
-                      }
-
-                      const updatedProject = await response.json();
+                      const updatedProject = await generateQuestions(projectId!);
                       setProject(updatedProject);
                       await fetchComments();
                       setError('');

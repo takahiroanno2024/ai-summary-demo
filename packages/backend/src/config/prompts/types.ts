@@ -1,26 +1,28 @@
 // プロンプトの型定義
 export interface ExtractionPrompts {
-  relevanceCheck: (topic: string, context?: string) => string;
-  contentExtraction: (extractionTopic: string, context?: string) => string;
+  relevanceCheck: (topic: string, context?: string, customPrompt?: string) => string;
+  contentExtraction: (extractionTopic: string, context?: string, customPrompt?: string) => string;
 }
 
 export interface StancePrompts {
   stanceAnalysis: (
     questionText: string,
     stanceOptions: string,
-    context?: string
+    context?: string,
+    customPrompt?: string
   ) => string;
 }
 
 export interface QuestionPrompts {
-  questionGeneration: (comments: string[]) => string;
+  questionGeneration: (comments: string[], customPrompt?: string) => string;
 }
 
 export interface ReportPrompts {
   stanceReport: (
     questionText: string,
     stanceAnalysisEntries: Array<[string, { count: number; comments: string[] }]>,
-    stanceNames: Map<string, string>
+    stanceNames: Map<string, string>,
+    customPrompt?: string
   ) => string;
   projectReport: (
     project: {
@@ -36,6 +38,7 @@ export interface ReportPrompts {
         };
       };
       analysis: string;
-    }>
+    }>,
+    customPrompt?: string
   ) => string;
 }

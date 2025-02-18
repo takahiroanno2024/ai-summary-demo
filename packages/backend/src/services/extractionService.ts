@@ -16,12 +16,12 @@ async function sleep(ms: number): Promise<void> {
   return new Promise(resolve => setTimeout(resolve, ms));
 }
 
-async function isRelevantToTopic(content: string, topic: string, context?: string): Promise<boolean> {
+async function isRelevantToTopic(content: string, topic: string, context?: string, customPrompt?: string): Promise<boolean> {
   let retries = 0;
   
   while (true) {
     try {
-      const prompt = extractionPrompts.relevanceCheck(topic, context).replace('{content}', content);
+      const prompt = extractionPrompts.relevanceCheck(topic, context, customPrompt).replace('{content}', content);
       console.log('Relevance Check LLM Input:', prompt);
 
       const result = await model.generateContent(prompt);
@@ -55,7 +55,7 @@ async function isRelevantToTopic(content: string, topic: string, context?: strin
   }
 }
 
-export async function extractContent(content: string, extractionTopic?: string, context?: string): Promise<string | null> {
+export async function extractContent(content: string, extractionTopic?: string, context?: string, customPrompt?: string): Promise<string | null> {
   if (!extractionTopic) {
     return null;
   }
@@ -65,13 +65,13 @@ export async function extractContent(content: string, extractionTopic?: string, 
   while (true) {
     try {
       // First check if the content is relevant to the topic
-      const isRelevant = await isRelevantToTopic(content, extractionTopic, context);
+      const isRelevant = await isRelevantToTopic(content, extractionTopic, context, customPrompt);
       if (!isRelevant) {
         return null;
       }
 
       // If relevant, proceed with extraction
-      const prompt = extractionPrompts.contentExtraction(extractionTopic, context).replace('{content}', content);
+      const prompt = extractionPrompts.contentExtraction(extractionTopic, context, customPrompt).replace('{content}', content);
       console.log('Extraction LLM Input:', prompt);
 
       const result = await model.generateContent(prompt);

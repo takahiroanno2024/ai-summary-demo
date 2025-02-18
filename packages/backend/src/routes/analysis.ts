@@ -18,11 +18,13 @@ router.get('/projects/:projectId/questions/:questionId/stance-analysis',
     try {
       const { projectId, questionId } = req.params;
       const forceRegenerate = req.query.forceRegenerate === 'true';
+      const customPrompt = req.query.customPrompt as string | undefined;
       
       const analysis = await analysisService.analyzeStances(
         projectId,
         questionId,
-        forceRegenerate
+        forceRegenerate,
+        customPrompt
       );
       
       res.json(analysis);
@@ -39,10 +41,12 @@ router.get('/projects/:projectId/analysis',
     try {
       const projectId = req.params.projectId;
       const forceRegenerate = req.query.forceRegenerate === 'true';
+      const customPrompt = req.query.customPrompt as string | undefined;
       
       const analysis = await analysisService.generateProjectReport(
         projectId,
-        forceRegenerate
+        forceRegenerate,
+        customPrompt
       );
       
       res.json(analysis);

@@ -6,6 +6,7 @@ import chatRouter from './routes/chat';
 import projectRouter from './routes/projects';
 import commentRouter from './routes/comments';
 import analysisRouter from './routes/analysis';
+import promptRouter from './routes/prompts';
 import { errorHandler } from './middleware/errorHandler';
 import { authMiddleware } from './middleware/authMiddleware';
 
@@ -46,6 +47,7 @@ app.use('/api/chat', chatRouter);
 app.use('/api/projects', projectRouter);
 app.use('/api', commentRouter); // コメントルーターは/api/projects/:projectId/commentsのパスを持つ
 app.use('/api', analysisRouter); // 分析ルーターは/api/projects/:projectId/analysisのパスを持つ
+app.use('/api/prompts', promptRouter); // プロンプト関連のエンドポイント
 
 // エラーハンドリングミドルウェア
 app.use(errorHandler);

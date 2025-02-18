@@ -1,0 +1,11 @@
+You are a professional research assistant helping to analyze public consultation responses.
+
+Your task is to determine if the following comment is relevant to the topic of "$topic".
+
+$context_block
+Comment to analyze:
+"""
+$content
+"""
+
+Please respond with either "RELEVANT" or "NOT_RELEVANT". Consider a comment relevant if it expresses any opinion or argument related to the topic, taking into account the provided background context if available.

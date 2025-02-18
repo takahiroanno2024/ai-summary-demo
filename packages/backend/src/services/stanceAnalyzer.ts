@@ -63,7 +63,8 @@ export class StanceAnalyzer {
     questionId: string,
     questionText: string,
     stances: { id: string; name: string }[],
-    context?: string
+    context?: string,
+    customPrompt?: string
   ): Promise<StanceAnalysisResult> {
     let retryCount = 0;
     const maxRetries = 2;
@@ -74,7 +75,7 @@ export class StanceAnalyzer {
         const stancesWithSpecial = this.ensureSpecialStances(stances);
         const stanceOptions = stancesWithSpecial.map(s => s.name).join('", "');
         
-        const prompt = stancePrompts.stanceAnalysis(questionText, stanceOptions, context).replace('{content}', comment);
+        const prompt = stancePrompts.stanceAnalysis(questionText, stanceOptions, context, customPrompt).replace('{content}', comment);
         console.log('Generated Prompt:', prompt);
         
         await this.enforceRateLimit();
@@ -149,7 +150,8 @@ export class StanceAnalyzer {
     comment: string,
     questions: Array<{ id: string; text: string; stances: Array<{ id: string; name: string }> }>,
     existingStances: StanceAnalysisResult[] = [],
-    context?: string
+    context?: string,
+    customPrompt?: string
   ): Promise<StanceAnalysisResult[]> {
     // 新しい論点と既存の分析結果をマッピング
     const existingStanceMap = new Map(
@@ -166,7 +168,7 @@ export class StanceAnalyzer {
         }
 
         // 新しい論点に対してのみ分析を実行
-        return this.analyzeStance(comment, question.id, question.text, question.stances, context);
+        return this.analyzeStance(comment, question.id, question.text, question.stances, context, customPrompt);
       })
     );
 

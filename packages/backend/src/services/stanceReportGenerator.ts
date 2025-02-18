@@ -21,7 +21,7 @@ export class StanceReportGenerator {
 
   constructor(apiKey: string) {
     this.genAI = new GoogleGenerativeAI(apiKey);
-    this.model = this.genAI.getGenerativeModel({ model: 'gemini-1.5-pro' });
+    this.model = this.genAI.getGenerativeModel({ model: 'gemini-2.0-flash' });
   }
 
   async getAnalysis(
@@ -61,7 +61,8 @@ export class StanceReportGenerator {
     comments: IComment[],
     stances: { id: string; name: string }[],
     questionId: string,
-    forceRegenerate: boolean = false
+    forceRegenerate: boolean = false,
+    customPrompt?: string
   ): Promise<StanceAnalysisResult> {
     // 既存の分析結果を確認（強制再生成でない場合のみ）
     if (!forceRegenerate) {
@@ -102,27 +103,96 @@ export class StanceReportGenerator {
 
     try {
       // Geminiによる分析
-      const prompt = reportPrompts.stanceReport(questionText, Array.from(stanceAnalysis.entries()), stanceNames);
-      const result = await this.model.generateContent(prompt);
-      const analysis = result.response.text();
+      console.log('Generating stance report with params:', {
+        questionText,
+        stanceAnalysisEntries: Array.from(stanceAnalysis.entries()),
+        stanceNamesMap: Object.fromEntries(stanceNames),
+        hasCustomPrompt: !!customPrompt
+      });
+
+      let prompt;
+      try {
+        prompt = customPrompt
+          ? reportPrompts.stanceReport(
+              questionText,
+              Array.from(stanceAnalysis.entries()),
+              stanceNames,
+              customPrompt
+            )
+          : reportPrompts.stanceReport(
+              questionText,
+              Array.from(stanceAnalysis.entries()),
+              stanceNames
+            );
+        console.log('Generated prompt:', prompt);
+      } catch (error: any) {
+        console.error('Failed to generate prompt:', error);
+        throw new Error(`Prompt generation failed: ${error?.message || 'Unknown error'}`);
+      }
+
+      let geminiResult;
+      try {
+        geminiResult = await this.model.generateContent(prompt);
+        console.log('Raw Gemini response:', geminiResult.response);
+      } catch (error: any) {
+        console.error('Gemini API error:', error);
+        throw new Error(`Gemini API error: ${error?.message || 'Unknown error'}`);
+      }
+
+      let analysis;
+      try {
+        analysis = geminiResult.response.text();
+        console.log('Parsed analysis:', analysis);
+      } catch (error: any) {
+        console.error('Failed to parse Gemini response:', error);
+        throw new Error(`Response parsing failed: ${error?.message || 'Unknown error'}`);
+      }
 
       // 分析結果をデータベースに保存
-      const stanceAnalysisDoc = new StanceAnalysis({
-        projectId: new mongoose.Types.ObjectId(projectId),
-        questionId,
-        analysis,
-        stanceAnalysis: Object.fromEntries(stanceAnalysis),
-      });
-      await stanceAnalysisDoc.save();
+      try {
+        const stanceAnalysisDoc = new StanceAnalysis({
+          projectId: new mongoose.Types.ObjectId(projectId),
+          questionId,
+          analysis,
+          stanceAnalysis: Object.fromEntries(stanceAnalysis),
+        });
+        await stanceAnalysisDoc.save();
+        console.log('Successfully saved analysis to database:', {
+          projectId,
+          questionId,
+          analysisLength: analysis.length,
+          stanceCount: stanceAnalysis.size
+        });
+      } catch (error: any) {
+        console.error('Failed to save analysis to database:', {
+          error: error?.message || 'Unknown error',
+          stack: error?.stack,
+          projectId,
+          questionId
+        });
+        throw new Error(`Database save failed: ${error?.message || 'Unknown error'}`);
+      }
 
-      return {
+      const finalResult = {
         question: questionText,
         stanceAnalysis: Object.fromEntries(stanceAnalysis),
         analysis
       };
-    } catch (error) {
-      console.error('Analysis generation failed:', error);
-      throw error;
+      console.log('Returning final analysis result:', {
+        question: finalResult.question,
+        stanceCount: Object.keys(finalResult.stanceAnalysis).length,
+        analysisLength: finalResult.analysis.length
+      });
+      return finalResult;
+    } catch (error: any) {
+      console.error('Analysis generation failed:', {
+        error: error?.message || 'Unknown error',
+        stack: error?.stack,
+        projectId,
+        questionId,
+        questionText
+      });
+      throw new Error(`Analysis generation failed: ${error?.message || 'Unknown error'}`);
     }
   }
 }

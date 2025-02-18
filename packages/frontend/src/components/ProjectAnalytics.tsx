@@ -2,7 +2,7 @@ import { useState, useCallback, useEffect } from 'react';
 import { Project } from '../types/project';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
-import { API_URL } from '../config/api';
+import { generateProjectReport } from '../config/api';
 import { convertBoldBrackets } from '../utils/markdownHelper';
 
 interface ProjectAnalyticsProps {
@@ -24,25 +24,7 @@ export const ProjectAnalytics = ({ project }: ProjectAnalyticsProps) => {
     try {
       setIsLoading(true);
       setError(null);
-
-      const headers: Record<string, string> = {};
-      if (forceRegenerate && isAdmin) {
-        const adminKey = localStorage.getItem('adminKey');
-        if (adminKey) {
-          headers['x-api-key'] = adminKey;
-        }
-      }
-
-      const response = await fetch(
-        `${API_URL}/projects/${project._id}/analysis?forceRegenerate=${forceRegenerate}`,
-        { headers }
-      );
-      
-      if (!response.ok) {
-        throw new Error('分析レポートの取得に失敗しました');
-      }
-
-      const data = await response.json();
+      const data = await generateProjectReport(project._id, forceRegenerate);
       setAnalysisResult(data);
     } catch (err) {
       setError(err instanceof Error ? err.message : '予期せぬエラーが発生しました');

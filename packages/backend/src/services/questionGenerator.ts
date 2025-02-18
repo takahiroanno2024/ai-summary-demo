@@ -14,7 +14,7 @@ export class QuestionGenerator {
 
     constructor(apiKey: string) {
         this.genAI = new GoogleGenerativeAI(apiKey);
-        this.model = this.genAI.getGenerativeModel({ model: 'gemini-1.5-pro' });
+        this.model = this.genAI.getGenerativeModel({ model: 'gemini-2.0-flash' });
     }
 
     private async delay(ms: number): Promise<void> {
@@ -44,9 +44,9 @@ export class QuestionGenerator {
         }
     }
 
-    async generateQuestions(comments: string[]): Promise<GeneratedQuestion[]> {
+    async generateQuestions(comments: string[], customPrompt?: string): Promise<GeneratedQuestion[]> {
         try {
-            const prompt = questionPrompts.questionGeneration(comments);
+            const prompt = questionPrompts.questionGeneration(comments, customPrompt);
             console.log('Generated Prompt:', prompt);
             
             await this.enforceRateLimit();

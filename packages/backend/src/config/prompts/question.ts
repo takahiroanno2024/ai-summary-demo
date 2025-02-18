@@ -1,33 +1,9 @@
 import { QuestionPrompts } from './types';
+import { PromptTemplate } from '../../utils/promptTemplate';
 
 export const questionPrompts: QuestionPrompts = {
-  questionGeneration: (comments: string[]) => `
-以下のコメントリストを分析し、コメントの内容から適切な論点と立場のリストを生成してください。
-
-コメントリスト:
-"""
-${comments.join('\n')}
-"""
-
-要件:
-- 論点は、コメントの内容で頻繁に言及されている重要なトピックや論点を抽出して作成してください
-- 論点は質問形式で5個程度生成してください
-    - 立場が一つに偏るであろう論点を2個程度
-    - 立場が多様になる論点を3個程度
-- 立場は「〇〇派」のように、10~20文字程度の具体的な名前で表現してください。立場は1~3個生成してください。
-    - 立場が互いに重複しないようにしてください
-    - 「その他派」などは絶対に使わず、各立場は具体的で明確な意見を表すようにしてください。
-
-以下のJSON形式で回答してください:
-{
-    "questions": [
-        {
-            "text": "論点の文",
-            "stances": [
-                { "name": "立場1の名前" },
-                { "name": "立場2の名前" }
-            ]
-        }
-    ]
-}`
+  questionGeneration: (comments: string[]) =>
+    PromptTemplate.generate('question-generation', {
+      comments: comments.join('\n')
+    })
 };

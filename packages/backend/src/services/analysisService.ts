@@ -13,7 +13,8 @@ export class AnalysisService {
   async analyzeStances(
     projectId: string,
     questionId: string,
-    forceRegenerate: boolean = false
+    forceRegenerate: boolean = false,
+    customPrompt?: string
   ) {
     const project = await Project.findById(projectId);
     if (!project) {
@@ -26,18 +27,18 @@ export class AnalysisService {
     }
 
     const comments = await Comment.find({ projectId });
-    
     return await this.stanceReportGenerator.analyzeStances(
       projectId,
       question.text,
       comments,
       question.stances,
       questionId,
-      forceRegenerate
+      forceRegenerate,
+      customPrompt
     );
   }
 
-  async generateProjectReport(projectId: string, forceRegenerate: boolean = false) {
+  async generateProjectReport(projectId: string, forceRegenerate: boolean = false, customPrompt?: string) {
     const project = await Project.findById(projectId);
     if (!project) {
       throw new AppError(404, 'Project not found');
@@ -48,7 +49,8 @@ export class AnalysisService {
     return await this.projectReportGenerator.generateProjectReport(
       project,
       comments,
-      forceRegenerate
+      forceRegenerate,
+      customPrompt
     );
   }
 
