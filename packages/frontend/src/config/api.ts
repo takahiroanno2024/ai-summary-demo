@@ -2,8 +2,7 @@ import { ChatMessage, ChatRoom, NewChatMessage, NewChatRoom } from '../types/cha
 import { CustomPrompts, STORAGE_KEY, PromptType } from '../types/prompt';
 
 export const getApiUrl = () => {
-  const host = window.location.hostname;
-  return `http://${host}:3001/api`;
+  return import.meta.env.VITE_API_URL + "/api";
 };
 
 export const API_URL = getApiUrl();
