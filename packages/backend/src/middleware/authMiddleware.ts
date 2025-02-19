@@ -21,14 +21,6 @@ export function authMiddleware(req: Request, res: Response, next: NextFunction) 
 
   // 非Adminでもアクセス可能なエンドポイントの定義
   const publicEndpoints: PublicEndpoint[] = [
-    // プロジェクト関連
-    {
-      method: 'GET',
-      pathPattern: {
-        pattern: '/projects',
-        params: []
-      }
-    },
     {
       method: 'GET',
       pathPattern: {
