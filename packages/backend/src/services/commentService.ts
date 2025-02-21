@@ -71,9 +71,10 @@ export class CommentService {
     }
 
     console.log(`Starting bulk import of ${comments.length} comments for project ${projectId}`);
-    
+    const validComments = comments.filter((c: any) => (c != "" && !!c?.content));
+
     const processedComments = await processInBatches(
-      comments,
+      validComments,
       50,
       async (comment) => {
         const content = typeof comment === 'string' ? comment : comment.content;
