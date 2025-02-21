@@ -1,4 +1,5 @@
 import { GoogleGenerativeAI } from '@google/generative-ai';
+import { stancePrompts } from '../config/prompts';
 
 export interface StanceAnalysisResult {
   questionId: string;
@@ -21,36 +22,6 @@ export class StanceAnalyzer {
   private async enforceRateLimit(): Promise<void> {
     // Rate limit is handled by the Gemini API client
     return Promise.resolve();
-  }
-
-  private async generatePrompt(
-    comment: string,
-    questionText: string,
-    stances: { id: string; name: string }[]
-  ): Promise<string> {
-    const stanceOptions = stances.map(s => s.name).join('", "');
-    return `
-以下のコメントに対して、論点「${questionText}」について、コメントがどの立場を取っているか分析してください。立場が明確でなければ「立場なし」を選択してください。
-
-コメント:
-"""
-${comment}
-"""
-
-可能な立場: "${stanceOptions}"
-
-注意事項:
-- "立場なし": コメントが論点に対して明確な立場を示していない場合
-- "その他の立場": コメントが論点に対して明確な立場を示しているが、与えられた選択肢のいずれにも当てはまらない場合
-- コメントの言外の意味を読み取ろうとせず、明示的に書かれている内容のみを分析してください
-
-以下のJSON形式で回答してください:
-{
-  "reasoning": "考察"
-  "stance": "立場の名前",
-  "confidence": 信頼度（0から1の数値）,
-}
-`;
   }
 
   private async parseResponse(response: string): Promise<{ stance: string | null; confidence: number | null }> {
@@ -91,7 +62,9 @@ ${comment}
     comment: string,
     questionId: string,
     questionText: string,
-    stances: { id: string; name: string }[]
+    stances: { id: string; name: string }[],
+    context?: string,
+    customPrompt?: string
   ): Promise<StanceAnalysisResult> {
     let retryCount = 0;
     const maxRetries = 2;
@@ -100,8 +73,9 @@ ${comment}
       try {
         // 特殊な立場を確実に含める
         const stancesWithSpecial = this.ensureSpecialStances(stances);
+        const stanceOptions = stancesWithSpecial.map(s => s.name).join('", "');
         
-        const prompt = await this.generatePrompt(comment, questionText, stancesWithSpecial);
+        const prompt = stancePrompts.stanceAnalysis(questionText, stanceOptions, context, customPrompt).replace('{content}', comment);
         console.log('Generated Prompt:', prompt);
         
         await this.enforceRateLimit();
@@ -175,7 +149,9 @@ ${comment}
   async analyzeAllStances(
     comment: string,
     questions: Array<{ id: string; text: string; stances: Array<{ id: string; name: string }> }>,
-    existingStances: StanceAnalysisResult[] = []
+    existingStances: StanceAnalysisResult[] = [],
+    context?: string,
+    customPrompt?: string
   ): Promise<StanceAnalysisResult[]> {
     // 新しい論点と既存の分析結果をマッピング
     const existingStanceMap = new Map(
@@ -192,7 +168,7 @@ ${comment}
         }
 
         // 新しい論点に対してのみ分析を実行
-        return this.analyzeStance(comment, question.id, question.text, question.stances);
+        return this.analyzeStance(comment, question.id, question.text, question.stances, context, customPrompt);
       })
     );
 

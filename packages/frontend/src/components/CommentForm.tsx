@@ -5,11 +5,17 @@ import { CommentSourceType } from '../types/comment';
 interface CommentFormProps {
   onSubmit: (data: { content: string; sourceType?: CommentSourceType; sourceUrl?: string }) => Promise<void>;
   project: Project;
+  isAdmin?: boolean;
 }
 
-export const CommentForm = ({ onSubmit }: CommentFormProps) => {
+export const CommentForm = ({ onSubmit, isAdmin = false }: CommentFormProps) => {
   const [content, setContent] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  // admin権限がない場合は何も表示しない
+  if (!isAdmin) {
+    return null;
+  }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();

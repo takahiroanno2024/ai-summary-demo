@@ -4,9 +4,10 @@ import { Link } from 'react-router-dom';
 interface ProjectListProps {
   projects: Project[];
   onEdit?: (project: Project) => void;
+  showEditButton?: boolean;
 }
 
-export const ProjectList = ({ projects, onEdit }: ProjectListProps) => {
+export const ProjectList = ({ projects, onEdit, showEditButton = true }: ProjectListProps) => {
   return (
     <div className="space-y-4">
       {projects.map((project) => (
@@ -33,7 +34,7 @@ export const ProjectList = ({ projects, onEdit }: ProjectListProps) => {
                 </div>
               </Link>
             </div>
-            {onEdit && (
+            {onEdit && showEditButton && (
               <button
                 onClick={() => onEdit(project)}
                 className="ml-4 px-3 py-1 text-sm text-blue-600 hover:text-blue-700 hover:bg-blue-50 rounded-md transition-colors"

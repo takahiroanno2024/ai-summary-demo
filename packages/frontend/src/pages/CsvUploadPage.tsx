@@ -1,5 +1,6 @@
-import React, { useState, useCallback, useRef } from 'react';
-import { API_URL } from '../config/api';
+import React, { useState, useCallback, useRef, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { createProjectWithCsv, uploadCommentsBulk, generateQuestions as generateProjectQuestions } from '../config/api';
 import { CommentSourceType } from '../types/comment';
 import Papa from 'papaparse';
 import type { ParseResult } from 'papaparse';
@@ -10,12 +11,15 @@ interface CsvRow {
   sourceUrl: string;
 }
 
-
 const CsvUploadPage: React.FC = () => {
+  const navigate = useNavigate();
+  const [isAdmin, setIsAdmin] = useState(() => !!localStorage.getItem('adminKey'));
+
   // Project form states
   const [projectName, setProjectName] = useState<string>('');
   const [projectDescription, setProjectDescription] = useState<string>('');
   const [extractionTopic, setExtractionTopic] = useState<string>('');
+  const [context, setContext] = useState<string>('');
   const [currentProjectId, setCurrentProjectId] = useState<string>('');
 
   // File states
@@ -32,6 +36,26 @@ const CsvUploadPage: React.FC = () => {
   const [currentStep, setCurrentStep] = useState<'project' | 'upload' | 'questions' | 'complete'>('project');
   
   const abortControllerRef = useRef<AbortController | null>(null);
+
+  // Admin権限チェック
+  useEffect(() => {
+    if (!isAdmin) {
+      navigate('/');
+    }
+  }, [isAdmin, navigate]);
+
+  // AdminKeyの変更を監視
+  useEffect(() => {
+    const handleStorageChange = () => {
+      const hasAdminKey = !!localStorage.getItem('adminKey');
+      setIsAdmin(hasAdminKey);
+      if (!hasAdminKey) {
+        navigate('/');
+      }
+    };
+    window.addEventListener('storage', handleStorageChange);
+    return () => window.removeEventListener('storage', handleStorageChange);
+  }, [navigate]);
 
   const handleFileSelect = useCallback((event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
@@ -78,23 +102,12 @@ const CsvUploadPage: React.FC = () => {
     setStatus('プロジェクトを作成中...');
 
     try {
-      const response = await fetch(`${API_URL}/projects`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          name: projectName,
-          description: projectDescription,
-          extractionTopic,
-        }),
+      const project = await createProjectWithCsv({
+        name: projectName,
+        description: projectDescription,
+        extractionTopic,
+        context,
       });
-
-      if (!response.ok) {
-        throw new Error('プロジェクトの作成に失敗しました');
-      }
-
-      const project = await response.json();
       setCurrentProjectId(project._id);
       setCurrentStep('upload');
       setStatus('プロジェクトが作成されました。CSVファイルをアップロードしてください。');
@@ -125,18 +138,7 @@ const CsvUploadPage: React.FC = () => {
       }));
 
       try {
-        const response = await fetch(`${API_URL}/projects/${currentProjectId}/comments/bulk`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({ comments }),
-        });
-
-        if (!response.ok) {
-          throw new Error(`APIエラー: ${response.statusText}`);
-        }
-
+        await uploadCommentsBulk(currentProjectId, comments);
         processedBatches++;
         const newProgress = (processedBatches / totalBatches) * 100;
         setProgress(newProgress);
@@ -191,14 +193,7 @@ const CsvUploadPage: React.FC = () => {
     setStatus('質問を生成中...');
 
     try {
-      const response = await fetch(`${API_URL}/projects/${currentProjectId}/generate-questions`, {
-        method: 'POST',
-      });
-
-      if (!response.ok) {
-        throw new Error('質問の生成に失敗しました');
-      }
-
+      await generateProjectQuestions(currentProjectId);
       setStatus('質問の生成が完了しました');
       setCurrentStep('complete');
     } catch (error) {
@@ -215,6 +210,10 @@ const CsvUploadPage: React.FC = () => {
     setProgress(0);
     setStatus('処理がキャンセルされました');
   }, []);
+
+  if (!isAdmin) {
+    return null;
+  }
 
   return (
     <div className="container mx-auto p-4">
@@ -288,6 +287,19 @@ const CsvUploadPage: React.FC = () => {
               />
             </label>
           </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700">
+              プロジェクトの背景情報
+              <textarea
+                value={context}
+                onChange={(e) => setContext(e.target.value)}
+                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+                rows={3}
+                placeholder="プロジェクトに関連する背景情報を入力してください"
+                disabled={isProcessing}
+              />
+            </label>
+          </div>
           <button
             onClick={createProject}
             disabled={isProcessing || !projectName || !extractionTopic}
@@ -332,7 +344,7 @@ const CsvUploadPage: React.FC = () => {
       {currentStep === 'questions' && !isProcessing && (
         <div className="space-y-4">
           <p className="text-gray-700">
-            コメントのアップロードが完了しました。論点を生成し、立場をラベル付けしますか？
+            コメントのアップロードが完了しました。論点を生成し、立場をラベル付けしますか?
           </p>
           <button
             onClick={generateQuestions}

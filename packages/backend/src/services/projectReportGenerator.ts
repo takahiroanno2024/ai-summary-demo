@@ -3,19 +3,11 @@ import mongoose from 'mongoose';
 import { IProject } from '../models/project';
 import { IComment } from '../models/comment';
 import { StanceReportGenerator } from './stanceReportGenerator';
+import { ProjectAnalysis, IProjectAnalysis } from '../models/projectAnalysis';
+import { reportPrompts } from '../config/prompts';
 
 export interface ProjectAnalysisResult {
   projectName: string;
-  questionAnalyses: {
-    question: string;
-    stanceAnalysis: {
-      [key: string]: {
-        count: number;
-        comments: string[];
-      };
-    };
-    analysis: string;
-  }[];
   overallAnalysis: string;
 }
 
@@ -26,93 +18,91 @@ export class ProjectReportGenerator {
 
   constructor(apiKey: string) {
     this.genAI = new GoogleGenerativeAI(apiKey);
-    this.model = this.genAI.getGenerativeModel({ model: 'gemini-1.5-pro' });
+    this.model = this.genAI.getGenerativeModel({ model: 'gemini-2.0-flash' });
     this.stanceReportGenerator = new StanceReportGenerator(apiKey);
   }
 
-  private sampleComments(comments: string[], count: number = 10): string[] {
-    if (comments.length <= count) return comments;
-    const shuffled = [...comments].sort(() => 0.5 - Math.random());
-    return shuffled.slice(0, count);
-  }
-
-  private async generateOverallAnalysisPrompt(
-    project: IProject,
-    questionAnalyses: {
-      question: string;
-      stanceAnalysis: {
-        [key: string]: {
-          count: number;
-          comments: string[];
-        };
-      };
-      analysis: string;
-    }[]
-  ): Promise<string> {
-    return `以下のプロジェクトの分析結果を読み、プロジェクト全体の傾向や特徴について理解し、
-その内容を万人に伝わるように分かりやすく、かつ十分に専門的で具体的になるように丁寧に説明してください。
-
-プロジェクト名: ${project.name}
-プロジェクト概要: ${project.description}
-
-${questionAnalyses.map((qa, index) => `
-論点${index + 1}: ${qa.question}
-
-論点に対する立場の分布と代表的なコメント:
-${Object.entries(qa.stanceAnalysis).map(([stance, data]) => `
-- ${stance}: ${data.count}件のコメント
-`).join('')}
-
-分析結果:
-${qa.analysis}
-`).join('\n---\n')}
-
-分析のポイント:
-- 特に重要な論点と対立軸
-- 全体で合意できている、できていない論点
-- 質問間の関連性や共通パターン
-- 特に注目すべき独特な意見や傾向
-- プロジェクト全体を通じて見えてくる重要な示唆
-
-コツ:
-- Markdown記法の見出し、箇条書き、太字などを積極的に利用し、徹底的に読みやすくしてください。tableは使わないでください。
-- パッと読んで誰でも理解できるように簡潔にまとめてください。
-- 質問間の関連性や全体的なパターンを重視してください。
-`;
+  async getAnalysis(
+    projectId: string
+  ): Promise<IProjectAnalysis | null> {
+    return ProjectAnalysis.findOne({
+      projectId: new mongoose.Types.ObjectId(projectId)
+    });
   }
 
   async generateProjectReport(
     project: IProject & { _id: mongoose.Types.ObjectId },
-    comments: IComment[]
+    comments: IComment[],
+    forceRegenerate: boolean = false,
+    customPrompt?: string
   ): Promise<ProjectAnalysisResult> {
     try {
-      // 各質問の分析を実行
+      // 強制再生成でない場合のみ既存の分析結果を確認
+      console.log('Checking for existing analysis...');
+      const existingAnalysis = await this.getAnalysis(project._id.toString());
+      console.log('Existing analysis:', existingAnalysis);
+      if (!forceRegenerate && existingAnalysis) {
+        console.log('Using existing analysis');
+        return {
+          projectName: existingAnalysis.projectName,
+          overallAnalysis: existingAnalysis.overallAnalysis
+        };
+      }
+      console.log('No existing analysis found or force regenerate is true');
+
+      // 各質問の分析を実行(全体分析のための入力として使用)
+      console.log('Generating question analyses...');
       const questionAnalyses = await Promise.all(
         project.questions.map(async question => {
+          console.log(`Analyzing question: ${question.text}`);
           const analysis = await this.stanceReportGenerator.analyzeStances(
             project._id.toString(),
             question.text,
             comments,
             question.stances,
-            question.id
+            question.id,
+            false,
+            customPrompt
           );
 
-          return {
+          console.log('Stance analysis result:', JSON.stringify(analysis.stanceAnalysis, null, 2));
+          const result = {
             question: question.text,
             stanceAnalysis: analysis.stanceAnalysis,
             analysis: analysis.analysis
           };
+          console.log('Question analysis result:', JSON.stringify(result, null, 2));
+          return result;
         })
       );
+      console.log('All question analyses:', JSON.stringify(questionAnalyses, null, 2));
 
       // プロジェクト全体の分析を生成
-      const prompt = await this.generateOverallAnalysisPrompt(project, questionAnalyses);
+      const prompt = reportPrompts.projectReport(
+        {
+          name: project.name,
+          description: project.description || '' // デフォルト値を設定
+        },
+        questionAnalyses,
+        customPrompt
+      );
       const result = await this.model.generateContent(prompt);
       const overallAnalysis = result.response.text();
 
+      // 分析結果をデータベースに保存 (既存のドキュメントがあれば更新、なければ新規作成)
+      await ProjectAnalysis.findOneAndUpdate(
+        { projectId: project._id },
+        {
+          projectId: project._id,
+          projectName: project.name,
+          overallAnalysis,
+          updatedAt: new Date()
+        },
+        { upsert: true, new: true }
+      );
+
       return {
         projectName: project.name,
-        questionAnalyses,
         overallAnalysis
       };
     } catch (error) {

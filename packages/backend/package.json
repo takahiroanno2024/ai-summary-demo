@@ -5,7 +5,7 @@
   "main": "index.js",
   "scripts": {
     "dev": "ts-node-dev --respawn src/index.ts",
-    "build": "tsc",
+    "build": "tsc && copyfiles -u 2 \"src/config/prompt-templates/*.txt\" dist/config/prompt-templates/",
     "start": "node dist/index.js"
   },
   "keywords": [],
@@ -24,6 +24,7 @@
     "@types/express": "^4.17.21",
     "@types/node": "^20.17.14",
     "@types/uuid": "^10.0.0",
+    "copyfiles": "^2.4.1",
     "ts-node-dev": "^2.0.0",
     "typescript": "^5.7.3"
   }
