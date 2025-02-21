@@ -299,7 +299,7 @@ app.post('/api/projects/:projectId/comments/bulk', async (req, res) => {
     }
 
     console.log(`Starting bulk import of ${comments.length} comments for project ${projectId}`);
-	const validComments = comments.filter((c: any) => (c != "" && !!c?.content));
+    const validComments = comments.filter((c: any) => (c != "" && !!c?.content));
     
     // コメントを並列で処理
     const processedComments = await processInBatches(
