@@ -2,7 +2,6 @@ import express from 'express';
 import mongoose from 'mongoose';
 import cors from 'cors';
 import dotenv from 'dotenv';
-import chatRouter from './routes/chat';
 import projectRouter from './routes/projects';
 import commentRouter from './routes/comments';
 import analysisRouter from './routes/analysis';
@@ -43,7 +42,6 @@ mongoose.connection.on('reconnected', () => {
 
 // ルーターの設定
 // 各ルーターを個別のパスプレフィックスで設定
-app.use('/api/chat', chatRouter);
 app.use('/api/projects', projectRouter);
 app.use('/api', commentRouter); // コメントルーターは/api/projects/:projectId/commentsのパスを持つ
 app.use('/api', analysisRouter); // 分析ルーターは/api/projects/:projectId/analysisのパスを持つ

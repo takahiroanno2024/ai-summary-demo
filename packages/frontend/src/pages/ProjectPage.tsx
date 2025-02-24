@@ -2,7 +2,6 @@ import { useEffect, useState, useMemo } from 'react';
 import { useParams, useLocation, useNavigate, Link } from 'react-router-dom';
 import { Project } from '../types/project';
 import { Comment, CommentSourceType } from '../types/comment';
-import { ChatPage } from './ChatPage';
 import { CommentList } from '../components/CommentList';
 import { ProjectQuestionsAndStances } from '../components/ProjectQuestionsAndStances';
 import { CommentForm } from '../components/CommentForm';
@@ -26,11 +25,11 @@ export const ProjectPage = () => {
 
   const activeTab = useMemo(() => {
     const path = location.pathname.split('/').pop();
-    if (path === 'comments' || path === 'analytics' || path === 'overall' || path === 'chat') {
+    if (path === 'comments' || path === 'analytics' || path === 'overall') {
       return path;
     }
     return 'overall';
-  }, [location.pathname]) as 'comments' | 'analytics' | 'overall' | 'chat';
+  }, [location.pathname]) as 'comments' | 'analytics' | 'overall';
 
   // 初期リダイレクト
   useEffect(() => {
@@ -167,19 +166,6 @@ export const ProjectPage = () => {
           >
             コメント一覧
           </Link>
-          <Link
-            to={`/projects/${projectId}/chat`}
-            className={`
-              whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm
-              ${
-                activeTab === 'chat'
-                  ? 'border-blue-500 text-blue-600'
-                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-              }
-            `}
-          >
-            チャット
-          </Link>
         </nav>
       </div>
 
@@ -239,8 +225,6 @@ export const ProjectPage = () => {
         {activeTab === 'overall' && (
           <ProjectAnalytics project={project} />
         )}
-
-        {activeTab === 'chat' && <ChatPage />}
       </div>
     </div>
   );
