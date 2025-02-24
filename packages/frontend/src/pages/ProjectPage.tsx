@@ -29,7 +29,7 @@ export const ProjectPage = () => {
     if (path === 'comments' || path === 'analytics' || path === 'overall' || path === 'chat') {
       return path;
     }
-    return 'comments';
+    return 'overall';
   }, [location.pathname]) as 'comments' | 'analytics' | 'overall' | 'chat';
 
   // 初期リダイレクト
@@ -38,7 +38,7 @@ export const ProjectPage = () => {
       if (questionId) {
         navigate(`/projects/${projectId}/analytics?question=${questionId}`);
       } else {
-        navigate(`/projects/${projectId}/comments`);
+        navigate(`/projects/${projectId}/overall`);
       }
     }
   }, [projectId, location.pathname, navigate, questionId]);
