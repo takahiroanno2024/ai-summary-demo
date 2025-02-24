@@ -64,6 +64,7 @@ services:
     environment:
       - PORT=3030
       - BACKEND_API_URL=http://backend:3001/api
+      - GEMINI_API_KEY=${GEMINI_API_KEY}
     depends_on:
       - backend
 

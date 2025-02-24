@@ -2,13 +2,26 @@ import express from 'express';
 import { createServer } from 'http';
 import { WebSocket, WebSocketServer } from 'ws';
 import axios from 'axios';
+import { GoogleGenerativeAI, HarmCategory, HarmBlockThreshold } from '@google/generative-ai';
 import { SessionManager } from './services/SessionManager';
-import { WebSocketMessage, Project } from './types';
+import { WebSocketMessage, Project, ChatMessage } from './types';
 
 const app = express();
 const server = createServer(app);
 const wss = new WebSocketServer({ noServer: true });
 const sessionManager = new SessionManager();
+
+// Gemini APIの初期化
+const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
+if (!GEMINI_API_KEY) {
+  console.error('Error: GEMINI_API_KEY is not set in environment variables');
+  process.exit(1);
+}
+
+const genAI = new GoogleGenerativeAI(GEMINI_API_KEY);
+const model = genAI.getGenerativeModel({ 
+  model: 'gemini-2.0-flash',
+});
 
 // バックエンドAPIの設定
 const backendApi = axios.create({
@@ -51,6 +64,73 @@ function formatQuestionsList(questions: Project['questions']): string {
   return '論点一覧:\n' + questions.map((q, i) => `${i + 1}. ${q.text}`).join('\n');
 }
 
+function formatChatHistory(history: ChatMessage[]): string {
+  return history.map(msg => `${msg.sender === 'user' ? 'ユーザー' : 'アシスタント'}: ${msg.content}`).join('\n');
+}
+
+async function generateResponse(
+  userMessage: string,
+  questions: Project['questions'],
+  history: ChatMessage[]
+): Promise<string> {
+  try {
+    const messages = [];
+    
+    // システムプロンプトを追加
+    messages.push({
+      role: 'user',
+      parts: [{text: `
+あなたは議論を深めるためのアシスタントです。以下の論点に基づいて、ユーザーの発言を分析し、
+適切な論点に誘導しながら建設的な議論を展開してください。
+
+【論点一覧】
+${questions.map((q, i) => `${i + 1}. ${q.text}`).join('\n')}
+
+以下の点を意識して返答を生成してください：
+1. ユーザーの発言が論点のいずれかに関連している場合、その論点についてより深い議論を促す
+2. ユーザーの発言が論点から外れている場合、適切な論点に誘導する
+3. 常に建設的で具体的な議論となるよう導く
+4. 一方的な主張を避け、ユーザーの意見を引き出すよう心がける`}]
+    });
+
+    // チャット履歴を追加
+    for (const msg of history.slice(-5)) { // 直近5件のみ使用
+      messages.push({
+        role: msg.sender === 'user' ? 'user' : 'model',
+        parts: [{text: msg.content}]
+      });
+    }
+
+    // 最新のユーザーメッセージを追加
+    messages.push({
+      role: 'user',
+      parts: [{text: userMessage}]
+    });
+
+    const result = await model.generateContent({
+      contents: messages,
+      generationConfig: {
+        temperature: 0.7,
+        topK: 40,
+        topP: 0.95,
+        maxOutputTokens: 1024,
+      },
+    });
+
+    const response = await result.response;
+    return response.text();
+  } catch (error) {
+    console.error('Error generating response:', error);
+    if (error instanceof Error) {
+      console.error('Error details:', error.message);
+      if ('status' in error) {
+        console.error('Status:', (error as any).status);
+      }
+    }
+    return 'すみません、応答の生成中にエラーが発生しました。APIキーの設定や権限を確認してください。';
+  }
+}
+
 async function handleConnection(ws: WebSocket, sessionId: string, projectId: string) {
   console.log(`New connection established for project: ${projectId}, session: ${sessionId}`);
 
@@ -66,6 +146,12 @@ async function handleConnection(ws: WebSocket, sessionId: string, projectId: str
           return;
         }
 
+        const session = sessionManager.getSession(sessionId);
+        if (!session) {
+          ws.send(JSON.stringify({ error: 'Session not found' }));
+          return;
+        }
+
         let response: string;
         
         // "questions"コマンドの処理
@@ -73,8 +159,13 @@ async function handleConnection(ws: WebSocket, sessionId: string, projectId: str
           const questions = await getProjectQuestions(projectId);
           response = formatQuestionsList(questions);
         } else {
-          // 通常のメッセージはオウム返し
-          response = message.content;
+          // Gemini APIを使用して応答を生成
+          const questions = await getProjectQuestions(projectId);
+          response = await generateResponse(
+            message.content,
+            questions,
+            session.history
+          );
         }
 
         // ボットの応答を保存して送信
