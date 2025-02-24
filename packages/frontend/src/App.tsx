@@ -38,6 +38,7 @@ function App() {
             <Route path="comments" element={<ProjectPage />} />
             <Route path="analytics" element={<ProjectPage />} />
             <Route path="overall" element={<ProjectPage />} />
+            <Route path="chat" element={<ProjectPage />} />
           </Route>
           <Route path="/csv-upload" element={<CsvUploadPage />} />
           <Route path="/adminauth" element={<AdminAuthPage />} />

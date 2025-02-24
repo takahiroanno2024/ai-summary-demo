@@ -25,7 +25,6 @@ APIは2つのアクセスレベルを提供します:
 ### パブリックエンドポイント
 以下のエンドポイントは一般アクセス(APIキー不要)で利用可能です:
 
-- `GET /projects` - プロジェクト一覧の取得
 - `GET /projects/:projectId` - 特定のプロジェクトの取得
 - `GET /projects/:projectId/comments` - プロジェクトのコメント一覧の取得
 - `GET /projects/:projectId/questions/:questionId/stance-analysis` - 立場分析レポートの取得(再生成オプション無効時のみ)
@@ -34,7 +33,8 @@ APIは2つのアクセスレベルを提供します:
 ### Admin権限が必要なエンドポイント
 以下の操作にはAdmin APIキーが必要です:
 
-- プロジェクトの作成・更新・削除
+- プロジェクト一覧の取得 (`GET /projects`)
+- プロジェクトの作成・更新
 - コメントの追加・一括インポート
 - 分析レポートの強制再生成(forceRegenerate=true)
 - 埋め込みデータの操作
@@ -53,7 +53,8 @@ http://localhost:3001/api
 GET /projects
 ```
 - 説明: 全てのプロジェクトを取得します
-- 認証: 不要
+- 認証: Admin必須
+- リクエストヘッダー: `x-api-key: <ADMIN_API_KEY>`
 - レスポンス: プロジェクトの配列
 
 #### プロジェクトの作成
@@ -68,8 +69,7 @@ POST /projects
   {
     "name": "プロジェクト名",
     "description": "プロジェクトの説明",
-    "extractionTopic": "抽出トピック",
-    "context": "コンテキスト情報"
+    "extractionTopic": "抽出トピック"
   }
   ```
 - レスポンス: 作成されたプロジェクト情報
@@ -97,7 +97,6 @@ PUT /projects/:projectId
     "name": "プロジェクト名",
     "description": "プロジェクトの説明",
     "extractionTopic": "抽出トピック",
-    "context": "コンテキスト情報",
     "questions": ["論点1", "論点2"]
   }
   ```
@@ -176,27 +175,29 @@ POST /projects/:projectId/comments/bulk
 GET /projects/:projectId/questions/:questionId/stance-analysis
 ```
 - 説明: 特定の論点に対するコメントの立場分析レポートを取得します
-- 認証: 
+- 認証:
   - 基本取得: 不要
   - 強制再生成: Admin必須
 - パラメータ:
   - projectId (MongoDB ObjectId)
   - questionId (string)
   - forceRegenerate (query, boolean, optional): 強制的に再分析を行うかどうか
-- レスポンス: 立場分析レポート
+  - customPrompt (query, string, optional): カスタム分析プロンプト
+- レスポンス: 立場分析レポート（JSON形式）
 
 #### プロジェクト全体の分析レポート
 ```
 GET /projects/:projectId/analysis
 ```
 - 説明: プロジェクト全体の包括的な分析レポートを生成します
-- 認証: 
+- 認証:
   - 基本取得: 不要
   - 強制再生成: Admin必須
 - パラメータ:
   - projectId (MongoDB ObjectId)
   - forceRegenerate (query, boolean, optional): 強制的に再分析を行うかどうか
-- レスポンス: プロジェクト分析レポート
+  - customPrompt (query, string, optional): カスタム分析プロンプト
+- レスポンス: プロジェクト分析レポート（JSON形式）
 
 #### プロジェクトデータのCSVエクスポート
 ```
@@ -206,21 +207,31 @@ GET /projects/:projectId/export-csv
 - 認証: Admin必須
 - リクエストヘッダー: `x-api-key: <ADMIN_API_KEY>`
 - パラメータ: projectId (MongoDB ObjectId)
-- レスポンス: CSVファイル
+- レスポンス:
+  - Content-Type: text/csv
+  - Content-Disposition: attachment; filename=project-[projectId]-export.csv
+  - ボディ: CSVデータ
 
-### 埋め込み API
+### プロンプト管理 API
 
-#### コメント埋め込みの取得
+#### デフォルトプロンプトの取得
 ```
-GET /projects/:projectId/questions/:questionId/embeddings
+GET /prompts/default
 ```
-- 説明: 特定の論点に関連するコメントの埋め込みベクトルを取得します
+- 説明: システムで使用される各種デフォルトプロンプトを取得します
 - 認証: Admin必須
 - リクエストヘッダー: `x-api-key: <ADMIN_API_KEY>`
-- パラメータ:
-  - projectId (MongoDB ObjectId)
-  - questionId (string)
-- レスポンス: 可視化用の埋め込みデータ
+- レスポンス:
+  ```json
+  {
+    "stanceAnalysis": "立場分析用プロンプト",
+    "contentExtraction": "内容抽出用プロンプト",
+    "questionGeneration": "質問生成用プロンプト",
+    "relevanceCheck": "関連性チェック用プロンプト",
+    "stanceReport": "立場レポート生成用プロンプト",
+    "projectReport": "プロジェクトレポート生成用プロンプト"
+  }
+  ```
 
 ## エラーレスポンス
 エラーが発生した場合、以下の形式でレスポンスが返されます:
