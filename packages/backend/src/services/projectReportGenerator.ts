@@ -87,7 +87,10 @@ export class ProjectReportGenerator {
         customPrompt
       );
       const result = await this.model.generateContent(prompt);
-      const overallAnalysis = result.response.text();
+      let overallAnalysis = result.response.text();
+
+      // Remove triple quotes or backticks if they exist
+      overallAnalysis = overallAnalysis.replace(/^"""|"""$|^```|```$/g, '').trim();
 
       // 分析結果をデータベースに保存 (既存のドキュメントがあれば更新、なければ新規作成)
       await ProjectAnalysis.findOneAndUpdate(
