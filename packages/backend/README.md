@@ -139,7 +139,38 @@ POST /projects/:projectId/comments
     "sourceUrl": "コメントのソースURL"
   }
   ```
-- レスポンス: 作成されたコメント情報
+- レスポンス:
+  ```json
+  {
+    "comment": {
+      "content": "コメント内容",
+      "projectId": "プロジェクトID",
+      "extractedContent": "抽出されたコンテンツ",
+      "stances": [
+        {
+          "questionId": "論点ID",
+          "stanceId": "立場ID",
+          "confidence": 0.95
+        }
+      ],
+      "sourceType": "コメントのソースタイプ",
+      "sourceUrl": "コメントのソースURL"
+    },
+    "analyzedQuestions": [
+      {
+        "id": "論点ID",
+        "text": "論点のテキスト",
+        "stances": [
+          {
+            "questionId": "論点ID",
+            "stanceId": "立場ID",
+            "confidence": 0.95
+          }
+        ]
+      }
+    ]
+  }
+  ```
 
 #### コメントの一括インポート
 ```
