@@ -2,11 +2,11 @@ FROM node:18-slim
 
 WORKDIR /app
 
-# Copy package files and lockfile
-COPY package.json package-lock.json ./
+# Copy package file
+COPY package.json ./
 
 # Install ALL dependencies (including dev dependencies)
-RUN npm ci
+RUN npm install
 
 # Copy source code and TypeScript config
 COPY tsconfig.json .
