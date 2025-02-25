@@ -5,15 +5,12 @@ WORKDIR /app
 # Copy package files
 COPY package*.json ./
 
-# Install production dependencies
-RUN npm ci --only=production
+# Install ALL dependencies (including dev dependencies)
+RUN npm ci
 
 # Copy source code and TypeScript config
 COPY tsconfig.json .
 COPY src/ src/
-
-# Install dev dependencies for build
-RUN npm install typescript @types/node @types/express @types/ws @types/uuid
 
 # Build TypeScript code
 RUN npm run build && \
