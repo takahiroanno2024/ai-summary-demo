@@ -56,11 +56,9 @@ services:
   chat-bot:
     build:
       context: ./packages/chat-bot
-      dockerfile: Dockerfile.dev
+      dockerfile: Dockerfile
     ports:
       - "3030:3030"
-    volumes:
-      - ./packages/chat-bot:/app
     environment:
       - PORT=3030
       - BACKEND_API_URL=http://backend:3001/api

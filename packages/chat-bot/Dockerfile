@@ -1,13 +1,27 @@
-FROM node:20-alpine
+FROM node:18-slim
 
 WORKDIR /app
 
+# Copy package files
 COPY package*.json ./
+
+# Install production dependencies
 RUN npm ci --only=production
 
-COPY dist/ ./dist/
+# Copy source code and TypeScript config
+COPY tsconfig.json .
+COPY src/ src/
 
-ENV PORT=3030
+# Install dev dependencies for build
+RUN npm install typescript @types/node @types/express @types/ws @types/uuid
+
+# Build TypeScript code
+RUN npm run build && \
+    npm prune --production && \
+    rm -rf src tsconfig.json
+
+# Expose the port
 EXPOSE 3030
 
-CMD ["node", "dist/index.js"]
+# Start the application
+CMD ["npm", "start"]
