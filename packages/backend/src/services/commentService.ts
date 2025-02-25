@@ -1,4 +1,5 @@
-import { Comment, CommentSourceType, ICommentStance } from '../models/comment';
+import mongoose from 'mongoose';
+import { Comment, CommentSourceType, ICommentStance, IComment } from '../models/comment';
 import { Project } from '../models/project';
 import { StanceAnalyzer, StanceAnalysisResult } from './stanceAnalyzer';
 import { extractContent } from './extractionService';
@@ -9,6 +10,15 @@ export interface CommentInput {
   content: string;
   sourceType?: CommentSourceType;
   sourceUrl?: string;
+}
+
+export interface CommentCreateResponse {
+  comment: mongoose.Document<unknown, {}, IComment> & IComment & { _id: mongoose.Types.ObjectId };
+  analyzedQuestions: {
+    id: string;
+    text: string;
+    stances: ICommentStance[];
+  }[];
 }
 
 export class CommentService {
@@ -28,7 +38,7 @@ export class CommentService {
       );
   }
 
-  async createComment(projectId: string, commentData: CommentInput) {
+  async createComment(projectId: string, commentData: CommentInput): Promise<CommentCreateResponse> {
     const project = await Project.findById(projectId);
     if (!project) {
       throw new AppError(404, 'Project not found');
@@ -57,7 +67,19 @@ export class CommentService {
       sourceUrl: commentData.sourceUrl || '',
     });
 
-    return await comment.save();
+    const savedComment = await comment.save();
+
+    // Group stances by question
+    const analyzedQuestions = project.questions.map(question => ({
+      id: question.id,
+      text: question.text,
+      stances: stances.filter(stance => stance.questionId === question.id)
+    }));
+
+    return {
+      comment: savedComment,
+      analyzedQuestions
+    };
   }
 
   async bulkImportComments(projectId: string, comments: (string | CommentInput)[]) {

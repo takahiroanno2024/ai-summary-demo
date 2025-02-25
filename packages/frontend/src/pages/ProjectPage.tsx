@@ -8,6 +8,7 @@ import { CommentForm } from '../components/CommentForm';
 import { StanceAnalytics } from '../components/StanceAnalytics';
 import { ProjectAnalytics } from '../components/ProjectAnalytics';
 import { QuestionGenerationButton } from '../components/QuestionGenerationButton';
+import { ChatComponent } from '../components/ChatComponent';
 import { getProject, getComments, addComment, generateQuestions } from '../config/api';
 
 export const ProjectPage = () => {
@@ -25,22 +26,24 @@ export const ProjectPage = () => {
 
   const activeTab = useMemo(() => {
     const path = location.pathname.split('/').pop();
-    if (path === 'comments' || path === 'analytics' || path === 'overall') {
+    if (path === 'comments' || path === 'analytics' || path === 'overall' || path === 'chat') {
       return path;
     }
     return 'overall';
-  }, [location.pathname]) as 'comments' | 'analytics' | 'overall';
+  }, [location.pathname]) as 'comments' | 'analytics' | 'overall' | 'chat';
 
   // 初期リダイレクト
   useEffect(() => {
     if (location.pathname === `/projects/${projectId}`) {
       if (questionId) {
         navigate(`/projects/${projectId}/analytics?question=${questionId}`);
+      } else if (isAdmin && location.search.includes('chat')) {
+        navigate(`/projects/${projectId}/chat`);
       } else {
         navigate(`/projects/${projectId}/overall`);
       }
     }
-  }, [projectId, location.pathname, navigate, questionId]);
+  }, [projectId, location.pathname, navigate, questionId, isAdmin]);
 
   const fetchProject = async () => {
     try {
@@ -166,6 +169,21 @@ export const ProjectPage = () => {
           >
             コメント一覧
           </Link>
+          {isAdmin && (
+            <Link
+              to={`/projects/${projectId}/chat`}
+              className={`
+                whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm
+                ${
+                  activeTab === 'chat'
+                    ? 'border-blue-500 text-blue-600'
+                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                }
+              `}
+            >
+              チャット
+            </Link>
+          )}
         </nav>
       </div>
 
@@ -224,6 +242,15 @@ export const ProjectPage = () => {
 
         {activeTab === 'overall' && (
           <ProjectAnalytics project={project} />
+        )}
+
+        {activeTab === 'chat' && isAdmin && (
+          <div className="bg-white rounded-lg shadow-sm p-6">
+            <h2 className="text-xl font-semibold text-gray-900 mb-4">
+              プロジェクトチャット
+            </h2>
+            <ChatComponent projectId={projectId!} />
+          </div>
         )}
       </div>
     </div>

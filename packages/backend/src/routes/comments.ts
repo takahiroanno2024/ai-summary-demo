@@ -28,12 +28,15 @@ router.post('/projects/:projectId/comments',
   async (req, res, next) => {
     try {
       const { content, sourceType, sourceUrl } = req.body;
-      const savedComment = await commentService.createComment(req.params.projectId, {
+      const result = await commentService.createComment(req.params.projectId, {
         content,
         sourceType,
         sourceUrl
       });
-      res.status(201).json(savedComment);
+      res.status(201).json({
+        comment: result.comment,
+        analyzedQuestions: result.analyzedQuestions
+      });
     } catch (error) {
       next(error);
     }
