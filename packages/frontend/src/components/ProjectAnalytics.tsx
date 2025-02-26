@@ -3,7 +3,6 @@ import { Project } from '../types/project';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import { generateProjectReport } from '../config/api';
-import { convertBoldBrackets } from '../utils/markdownHelper';
 
 interface ProjectAnalyticsProps {
   project: Project;
@@ -19,6 +18,31 @@ export const ProjectAnalytics = ({ project }: ProjectAnalyticsProps) => {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [isAdmin] = useState(() => !!localStorage.getItem('adminKey'));
+
+  // マークダウン内のquestion://リンクを実際のURLに変換する関数
+  const convertQuestionLinks = (markdown: string) => {
+    const baseUrl = `${window.location.protocol}//${window.location.host}/projects/${project._id}/analytics`;
+    
+    // 変換前の内容をログ
+    console.log('=== Converting Links ===');
+    console.log('Original markdown:', markdown);
+    
+    // [text](question://id) 形式のリンクを検索して変換
+    const converted = markdown.replace(
+      /\[([^\]]+)\]\(question:\/\/([^)]+)\)/g,
+      (match, text, questionId) => {
+        const newUrl = `${baseUrl}?question=${questionId}`;
+        console.log('Converting link:', { from: match, to: `[${text}](${newUrl})` });
+        return `[${text}](${newUrl})`;
+      }
+    );
+
+    // 変換結果をログ
+    console.log('Converted markdown:', converted);
+    console.log('===================');
+    
+    return converted;
+  };
 
   const fetchAnalysis = useCallback(async (forceRegenerate: boolean = false) => {
     try {
@@ -100,8 +124,11 @@ export const ProjectAnalytics = ({ project }: ProjectAnalyticsProps) => {
           )}
         </div>
         <div className="prose prose-sm max-w-none">
-          <ReactMarkdown remarkPlugins={[remarkGfm]} className="markdown">
-            {convertBoldBrackets(analysisResult.overallAnalysis)}
+          <ReactMarkdown
+            remarkPlugins={[remarkGfm]}
+            className="markdown"
+          >
+            {convertQuestionLinks(analysisResult.overallAnalysis)}
           </ReactMarkdown>
         </div>
       </div>

@@ -66,8 +66,11 @@ export class ProjectReportGenerator {
           );
 
           console.log('Stance analysis result:', JSON.stringify(analysis.stanceAnalysis, null, 2));
+
+
           const result = {
             question: question.text,
+            questionId: question.id,
             stanceAnalysis: analysis.stanceAnalysis,
             analysis: analysis.analysis
           };

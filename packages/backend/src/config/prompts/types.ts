@@ -31,6 +31,7 @@ export interface ReportPrompts {
     },
     questionAnalyses: Array<{
       question: string;
+      questionId: string;
       stanceAnalysis: {
         [key: string]: {
           count: number;
