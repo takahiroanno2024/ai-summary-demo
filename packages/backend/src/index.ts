@@ -14,8 +14,13 @@ dotenv.config();
 const app = express();
 const port = process.env.PORT || 3001;
 
-// ミドルウェアの設定
-app.use(cors());
+// CORS設定 - すべてのオリジンを許可
+app.use(cors({
+  origin: '*',
+  credentials: false // credentialsはfalseに設定（'*'との組み合わせではtrueは使用不可）
+}));
+
+// その他のミドルウェア設定
 app.use(express.json());
 app.use('/api', authMiddleware); // 全APIルートに認可ミドルウェアを適用
 
