@@ -1,4 +1,3 @@
-import { ChatMessage, ChatRoom, NewChatMessage, NewChatRoom } from '../types/chat';
 import { CustomPrompts, STORAGE_KEY, PromptType } from '../types/prompt';
 
 export const getApiUrl = () => {
@@ -28,62 +27,6 @@ const getHeaders = (contentType = true) => {
     headers['x-api-key'] = adminKey;
   }
   return headers;
-};
-
-// チャットルーム関連のAPI
-export const createChatRoom = async (projectId: string, data: NewChatRoom): Promise<ChatRoom> => {
-  const response = await fetch(`${API_URL}/projects/${projectId}/chat-rooms`, {
-    method: 'POST',
-    headers: getHeaders(),
-    body: JSON.stringify(data),
-  });
-  if (!response.ok) {
-    throw new Error('Failed to create chat room');
-  }
-  return response.json();
-};
-
-export const getChatRooms = async (projectId: string): Promise<ChatRoom[]> => {
-  const response = await fetch(`${API_URL}/projects/${projectId}/chat-rooms`, {
-    headers: getHeaders(false),
-  });
-  if (!response.ok) {
-    throw new Error('Failed to fetch chat rooms');
-  }
-  return response.json();
-};
-
-export const getChatRoom = async (chatRoomId: string): Promise<ChatRoom> => {
-  const response = await fetch(`${API_URL}/chat-rooms/${chatRoomId}`, {
-    headers: getHeaders(false),
-  });
-  if (!response.ok) {
-    throw new Error('Failed to fetch chat room');
-  }
-  return response.json();
-};
-
-// メッセージ関連のAPI
-export const addMessage = async (chatRoomId: string, data: NewChatMessage): Promise<ChatMessage> => {
-  const response = await fetch(`${API_URL}/chat-rooms/${chatRoomId}/messages`, {
-    method: 'POST',
-    headers: getHeaders(),
-    body: JSON.stringify(data),
-  });
-  if (!response.ok) {
-    throw new Error('Failed to add message');
-  }
-  return response.json();
-};
-
-export const getMessages = async (chatRoomId: string): Promise<ChatMessage[]> => {
-  const response = await fetch(`${API_URL}/chat-rooms/${chatRoomId}/messages`, {
-    headers: getHeaders(false),
-  });
-  if (!response.ok) {
-    throw new Error('Failed to fetch messages');
-  }
-  return response.json();
 };
 
 // カスタムプロンプト関連のヘルパー関数

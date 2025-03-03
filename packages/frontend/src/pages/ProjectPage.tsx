@@ -2,13 +2,13 @@ import { useEffect, useState, useMemo } from 'react';
 import { useParams, useLocation, useNavigate, Link } from 'react-router-dom';
 import { Project } from '../types/project';
 import { Comment, CommentSourceType } from '../types/comment';
-import { ChatPage } from './ChatPage';
 import { CommentList } from '../components/CommentList';
 import { ProjectQuestionsAndStances } from '../components/ProjectQuestionsAndStances';
 import { CommentForm } from '../components/CommentForm';
 import { StanceAnalytics } from '../components/StanceAnalytics';
 import { ProjectAnalytics } from '../components/ProjectAnalytics';
 import { QuestionGenerationButton } from '../components/QuestionGenerationButton';
+import { ChatComponent } from '../components/ChatComponent';
 import { getProject, getComments, addComment, generateQuestions } from '../config/api';
 
 export const ProjectPage = () => {
@@ -29,7 +29,7 @@ export const ProjectPage = () => {
     if (path === 'comments' || path === 'analytics' || path === 'overall' || path === 'chat') {
       return path;
     }
-    return 'comments';
+    return 'overall';
   }, [location.pathname]) as 'comments' | 'analytics' | 'overall' | 'chat';
 
   // 初期リダイレクト
@@ -37,11 +37,13 @@ export const ProjectPage = () => {
     if (location.pathname === `/projects/${projectId}`) {
       if (questionId) {
         navigate(`/projects/${projectId}/analytics?question=${questionId}`);
+      } else if (isAdmin && location.search.includes('chat')) {
+        navigate(`/projects/${projectId}/chat`);
       } else {
-        navigate(`/projects/${projectId}/comments`);
+        navigate(`/projects/${projectId}/overall`);
       }
     }
-  }, [projectId, location.pathname, navigate, questionId]);
+  }, [projectId, location.pathname, navigate, questionId, isAdmin]);
 
   const fetchProject = async () => {
     try {
@@ -167,19 +169,21 @@ export const ProjectPage = () => {
           >
             コメント一覧
           </Link>
-          <Link
-            to={`/projects/${projectId}/chat`}
-            className={`
-              whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm
-              ${
-                activeTab === 'chat'
-                  ? 'border-blue-500 text-blue-600'
-                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-              }
-            `}
-          >
-            チャット
-          </Link>
+          {isAdmin && (
+            <Link
+              to={`/projects/${projectId}/chat`}
+              className={`
+                whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm
+                ${
+                  activeTab === 'chat'
+                    ? 'border-blue-500 text-blue-600'
+                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                }
+              `}
+            >
+              チャット
+            </Link>
+          )}
         </nav>
       </div>
 
@@ -240,7 +244,14 @@ export const ProjectPage = () => {
           <ProjectAnalytics project={project} />
         )}
 
-        {activeTab === 'chat' && <ChatPage />}
+        {activeTab === 'chat' && isAdmin && (
+          <div className="bg-white rounded-lg shadow-sm p-6">
+            <h2 className="text-xl font-semibold text-gray-900 mb-4">
+              プロジェクトチャット
+            </h2>
+            <ChatComponent projectId={projectId!} />
+          </div>
+        )}
       </div>
     </div>
   );

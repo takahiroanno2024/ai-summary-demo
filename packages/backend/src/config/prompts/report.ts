@@ -38,6 +38,7 @@ ${data.comments.join('\n')}
     },
     questionAnalyses: Array<{
       question: string;
+      questionId: string;
       stanceAnalysis: {
         [key: string]: {
           count: number;
@@ -60,7 +61,7 @@ ${data.comments.join('\n')}
     const questionAnalysesText = questionAnalyses
       .map(
         (qa, index) => `
-論点${index + 1}: ${qa.question}
+[論点${index + 1}: ${qa.question}](question://${qa.questionId})
 
 論点に対する立場の分布と代表的なコメント:
 ${Object.entries(qa.stanceAnalysis)

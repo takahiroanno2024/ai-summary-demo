@@ -1,4 +1,4 @@
-import { useState, useCallback, useEffect, useRef } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { Comment, CommentSourceType } from '../types/comment';
 import { Project, Question, StanceAnalysisReport } from '../types/project';
@@ -65,15 +65,6 @@ export const StanceAnalytics = ({ comments, project, initialQuestionId }: Stance
     navigate(`${location.pathname}?${searchParams.toString()}`, { replace: true });
   };
 
-  // Create ref for scrolling
-  const questionRef = useRef<HTMLDivElement>(null);
-
-  // Scroll to question when selected
-  useEffect(() => {
-    if (questionRef.current) {
-      questionRef.current.scrollIntoView({ behavior: 'smooth', block: 'start' });
-    }
-  }, [selectedQuestion]);
   const [analysisReport, setAnalysisReport] = useState<StanceAnalysisReport | null>(null);
   const [isLoadingReport, setIsLoadingReport] = useState(false);
   const [expandedStances, setExpandedStances] = useState<Record<string, boolean>>({});
@@ -210,7 +201,7 @@ export const StanceAnalytics = ({ comments, project, initialQuestionId }: Stance
       </div>
 
       {/* 選択された論点の内容 */}
-      <div ref={questionRef} className="bg-white p-4 rounded-lg shadow-sm border border-gray-200">
+      <div className="bg-white p-4 rounded-lg shadow-sm border border-gray-200">
         <h3 className="text-lg font-medium text-gray-900 mb-4">
           {selectedQuestion.text}
         </h3>

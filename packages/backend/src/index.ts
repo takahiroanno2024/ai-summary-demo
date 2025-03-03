@@ -2,7 +2,6 @@ import express from 'express';
 import mongoose from 'mongoose';
 import cors from 'cors';
 import dotenv from 'dotenv';
-import chatRouter from './routes/chat';
 import projectRouter from './routes/projects';
 import commentRouter from './routes/comments';
 import analysisRouter from './routes/analysis';
@@ -15,8 +14,13 @@ dotenv.config();
 const app = express();
 const port = process.env.PORT || 3001;
 
-// ミドルウェアの設定
-app.use(cors());
+// CORS設定 - すべてのオリジンを許可
+app.use(cors({
+  origin: '*',
+  credentials: false // credentialsはfalseに設定（'*'との組み合わせではtrueは使用不可）
+}));
+
+// その他のミドルウェア設定
 app.use(express.json());
 app.use('/api', authMiddleware); // 全APIルートに認可ミドルウェアを適用
 
@@ -43,7 +47,6 @@ mongoose.connection.on('reconnected', () => {
 
 // ルーターの設定
 // 各ルーターを個別のパスプレフィックスで設定
-app.use('/api/chat', chatRouter);
 app.use('/api/projects', projectRouter);
 app.use('/api', commentRouter); // コメントルーターは/api/projects/:projectId/commentsのパスを持つ
 app.use('/api', analysisRouter); // 分析ルーターは/api/projects/:projectId/analysisのパスを持つ

@@ -1,26 +1,18 @@
-export interface ChatRoom {
-  _id: string;
-  projectId: string;
-  name: string;
-  createdAt: string;
-  updatedAt: string;
-}
-
 export interface ChatMessage {
-  _id: string;
-  chatRoomId: string;
-  type: 'user' | 'system';
+  id: string;
   content: string;
-  authorName: string;
-  createdAt: string;
-  updatedAt: string;
+  timestamp: Date;
+  sender: 'user' | 'bot';
 }
 
-export interface NewChatRoom {
-  name: string;
+export interface ChatSession {
+  id: string;
+  projectId: string;
+  history: ChatMessage[];
+  lastActivity: Date;
 }
 
-export interface NewChatMessage {
+export interface WebSocketMessage {
+  type: 'message';
   content: string;
-  authorName: string;
 }
