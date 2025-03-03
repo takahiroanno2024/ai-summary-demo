@@ -33,10 +33,7 @@ router.post('/projects/:projectId/comments',
         sourceType,
         sourceUrl
       });
-      res.status(201).json({
-        comment: result.comment,
-        analyzedQuestions: result.analyzedQuestions
-      });
+      res.status(201).json(result);
     } catch (error) {
       next(error);
     }

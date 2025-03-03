@@ -6,6 +6,8 @@
 
 各ディレクトリの `.env.example` ファイルを `.env` にコピーして必要な環境変数を設定します：
 
+
+lll
 ```bash
 # ルートディレクトリ
 cp .env.example .env
