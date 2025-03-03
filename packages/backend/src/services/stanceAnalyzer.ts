@@ -12,7 +12,7 @@ export class StanceAnalyzer {
   private model: any;
   constructor(apiKey: string) {
     this.genAI = new GoogleGenerativeAI(apiKey);
-    this.model = this.genAI.getGenerativeModel({ model: 'gemini-1.5-flash' });
+    this.model = this.genAI.getGenerativeModel({ model: 'gemini-2.0-flash' });
   }
 
   private async delay(ms: number): Promise<void> {
