@@ -16,6 +16,7 @@ export const EmbeddedInsightPage = () => {
 
   const view = searchParams.get('view') || 'stance';
   const questionId = searchParams.get('question');
+  const analyticsUrl = `/projects/${projectId}/analytics`;
 
   useEffect(() => {
     const fetchData = async () => {
@@ -74,7 +75,9 @@ export const EmbeddedInsightPage = () => {
         <div className="absolute bottom-0 left-0 right-0 h-24 bg-gradient-to-t from-white to-transparent flex items-end justify-center pb-4">
           <button
             className="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-full text-sm font-medium transition-colors"
-            onClick={() => window.open(window.location.href, '_blank')}
+            onClick={() => {
+              window.open(analyticsUrl, '_blank');
+            }}
           >
             もっと見る
           </button>
