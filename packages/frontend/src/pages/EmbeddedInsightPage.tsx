@@ -16,7 +16,10 @@ export const EmbeddedInsightPage = () => {
 
   const view = searchParams.get('view') || 'stance';
   const questionId = searchParams.get('question');
-  const analyticsUrl = `/projects/${projectId}/analytics`;
+
+  const page = view === 'stance' ? "analytics" : "overall";
+
+  const analyticsUrl = `/projects/${projectId}/${page}`;
 
   useEffect(() => {
     const fetchData = async () => {
