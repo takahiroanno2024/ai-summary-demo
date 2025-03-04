@@ -46,8 +46,10 @@ function App() {
           <Route path="/csv-upload" element={<CsvUploadPage />} />
           <Route path="/adminauth" element={<AdminAuthPage />} />
           <Route path="/prompt-settings" element={<PromptSettingsPage />} />
-          <Route path="/embed/:projectId" element={<EmbeddedInsightPage />} />
+          <Route path="/embed/projects/:projectId/overall" element={<EmbeddedInsightPage />} />
+          <Route path="/embed/projects/:projectId/analytics" element={<EmbeddedInsightPage />} />
           <Route path="/embed/insights/:projectId" element={<EmbeddedInsightPage />} />
+          <Route path="/embed/:projectId" element={<EmbeddedInsightPage />} />
         </Routes>
       </div>
     </Router>

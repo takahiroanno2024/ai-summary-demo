@@ -2,11 +2,11 @@ import { useState, useCallback, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { Comment, CommentSourceType } from '../types/comment';
 import { Project, Question, StanceAnalysisReport } from '../types/project';
-import { PieChart, Pie, Cell, ResponsiveContainer, Legend, Tooltip } from 'recharts';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import { analyzeStances } from '../config/api';
 import { convertBoldBrackets } from '../utils/markdownHelper';
+import { StanceGraphComponent } from './StanceGraphComponent';
 
 interface StanceAnalyticsProps {
   comments: Comment[];
@@ -18,31 +18,6 @@ interface StanceStats {
   count: number;
   comments: Comment[];
 }
-
-// 円グラフ用の色
-const CHART_COLORS = [
-  '#3B82F6', // blue-500
-  '#10B981', // emerald-500
-  '#F59E0B', // amber-500
-  '#EF4444', // red-500
-  '#8B5CF6', // violet-500
-  '#EC4899', // pink-500
-  '#6366F1', // indigo-500
-  '#14B8A6', // teal-500
-];
-
-// カスタムツールチップ
-const CustomTooltip = ({ active, payload }: any) => {
-  if (active && payload && payload.length) {
-    return (
-      <div className="bg-white p-2 shadow-lg rounded-lg border border-gray-200">
-        <p className="text-sm font-medium">{payload[0].name}</p>
-        <p className="text-sm text-gray-600">{payload[0].value}件</p>
-      </div>
-    );
-  }
-  return null;
-};
 
 export const StanceAnalytics = ({ comments, project, initialQuestionId }: StanceAnalyticsProps) => {
   const navigate = useNavigate();
@@ -165,14 +140,6 @@ export const StanceAnalytics = ({ comments, project, initialQuestionId }: Stance
 
   const stanceStats = calculateStanceStats(selectedQuestion);
 
-  // 円グラフ用のデータを生成
-  const chartData = Object.entries(stanceStats)
-    .filter(([_, stats]) => stats.count > 0)
-    .map(([stanceId, stats]) => ({
-      name: getStanceName(stanceId),
-      value: stats.count,
-    }));
-
   return (
     <div className="space-y-6">
       {/* 論点選択タブ */}
@@ -206,32 +173,12 @@ export const StanceAnalytics = ({ comments, project, initialQuestionId }: Stance
           {selectedQuestion.text}
         </h3>
 
-        {/* 円グラフ */}
-        <div className="h-[300px] mb-8">
-          <ResponsiveContainer width="100%" height="100%">
-            <PieChart>
-              <Pie
-                data={chartData}
-                cx="50%"
-                cy="50%"
-                labelLine={false}
-                outerRadius={100}
-                fill="#8884d8"
-                dataKey="value"
-                isAnimationActive={false}
-              >
-                {chartData.map((_, index) => (
-                  <Cell
-                    key={`cell-${index}`}
-                    fill={CHART_COLORS[index % CHART_COLORS.length]}
-                  />
-                ))}
-              </Pie>
-              <Tooltip content={<CustomTooltip />} />
-              <Legend />
-            </PieChart>
-          </ResponsiveContainer>
-        </div>
+        {/* StanceGraphComponent を使用して円グラフを表示 */}
+        <StanceGraphComponent
+          comments={comments}
+          selectedQuestion={selectedQuestion}
+          showTitle={false} // タイトルは上で表示しているので不要
+        />
 
         {/* コメントリスト */}
         <div className="space-y-3 my-4">

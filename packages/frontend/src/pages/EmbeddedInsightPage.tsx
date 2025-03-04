@@ -1,21 +1,25 @@
 import { useState, useEffect } from 'react';
-import { useParams, useSearchParams } from 'react-router-dom';
+import { useParams, useSearchParams, useLocation } from 'react-router-dom';
 import { Project } from '../types/project';
 import { Comment } from '../types/comment';
-import { StanceAnalytics } from '../components/StanceAnalytics';
-import { ProjectAnalytics } from '../components/ProjectAnalytics';
+import { StanceGraphComponent } from '../components/StanceGraphComponent';
+import { ProjectQuestionsAndStances } from '../components/ProjectQuestionsAndStances';
 import { getProject, getComments } from '../config/api';
 
 export const EmbeddedInsightPage = () => {
   const { projectId } = useParams<{ projectId: string }>();
   const [searchParams] = useSearchParams();
+  const location = useLocation();
   const [project, setProject] = useState<Project | null>(null);
   const [comments, setComments] = useState<Comment[]>([]);
   const [error, setError] = useState<string>('');
   const [isLoading, setIsLoading] = useState(true);
+  const [selectedQuestion, setSelectedQuestion] = useState<any>(null);
 
   const view = searchParams.get('view') || 'stance';
   const questionId = searchParams.get('question');
+  const isOverallRoute = location.pathname.endsWith('/overall');
+  const isAnalyticsRoute = location.pathname.endsWith('/analytics');
 
   useEffect(() => {
     const fetchData = async () => {
@@ -42,6 +46,37 @@ export const EmbeddedInsightPage = () => {
     fetchData();
   }, [projectId]);
 
+  // プロジェクトが読み込まれたら選択された論点を更新
+  useEffect(() => {
+    if (project) {
+      if (questionId) {
+        const question = project.questions.find(q => q.id === questionId);
+        if (question) {
+          setSelectedQuestion(question);
+          return;
+        }
+      }
+      
+      // /overall ルートの場合またはquestionIdが指定されていない場合は、selectedQuestionをnullに設定
+      if (isOverallRoute || (!questionId && !isAnalyticsRoute)) {
+        setSelectedQuestion(null);
+        return;
+      }
+      
+      // /analytics ルートでquestionIdが指定されていない場合は、最初の論点を選択
+      if (isAnalyticsRoute && !questionId && project.questions.length > 0) {
+        setSelectedQuestion(project.questions[0]);
+        return;
+      }
+      
+      if (project.questions.length > 0) {
+        setSelectedQuestion(project.questions[0]);
+      } else {
+        setSelectedQuestion(null);
+      }
+    }
+  }, [project, questionId, isOverallRoute, isAnalyticsRoute]);
+
   if (isLoading) {
     return (
       <div className="flex justify-center items-center p-4">
@@ -60,16 +95,38 @@ export const EmbeddedInsightPage = () => {
     );
   }
 
+  // /overall ルートの場合は、プロジェクト全体のレポートを表示
+  if (isOverallRoute && project) {
+    return (
+      <div className="bg-white">
+        <ProjectQuestionsAndStances project={project} />
+      </div>
+    );
+  }
+
+  // /analytics ルート以外で、questionIdが指定されていない場合は、プロジェクト全体のレポートを表示
+  if (!isAnalyticsRoute && !questionId && project) {
+    return (
+      <div className="bg-white">
+        <ProjectQuestionsAndStances project={project} />
+      </div>
+    );
+  }
+
+  if (!selectedQuestion) {
+    return <div className="p-4">論点が設定されていません</div>;
+  }
+
   return (
     <div className="bg-white">
       {view === 'stance' ? (
-        <StanceAnalytics
+        <StanceGraphComponent
           comments={comments}
-          project={project}
-          initialQuestionId={questionId}
+          selectedQuestion={selectedQuestion}
+          showTitle={true} // 埋め込みビューではタイトルを表示する
         />
       ) : (
-        <ProjectAnalytics project={project} />
+        <ProjectQuestionsAndStances project={project} />
       )}
     </div>
   );
