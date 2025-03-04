@@ -4,6 +4,7 @@ import { Project } from '../types/project';
 import { Comment } from '../types/comment';
 import { StanceGraphComponent } from '../components/StanceGraphComponent';
 import { ProjectQuestionsAndStances } from '../components/ProjectQuestionsAndStances';
+import { ProjectAnalytics } from '../components/ProjectAnalytics';
 import { getProject, getComments } from '../config/api';
 
 export const EmbeddedInsightPage = () => {
@@ -20,6 +21,7 @@ export const EmbeddedInsightPage = () => {
   const questionId = searchParams.get('question');
   const isOverallRoute = location.pathname.endsWith('/overall');
   const isAnalyticsRoute = location.pathname.endsWith('/analytics');
+  const isCommentsRoute = location.pathname.endsWith('/comments');
 
   useEffect(() => {
     const fetchData = async () => {
@@ -75,7 +77,7 @@ export const EmbeddedInsightPage = () => {
         setSelectedQuestion(null);
       }
     }
-  }, [project, questionId, isOverallRoute, isAnalyticsRoute]);
+  }, [project, questionId, isOverallRoute, isAnalyticsRoute, isCommentsRoute]);
 
   if (isLoading) {
     return (
@@ -99,16 +101,25 @@ export const EmbeddedInsightPage = () => {
   if (isOverallRoute && project) {
     return (
       <div className="bg-white">
+        <ProjectAnalytics project={project} />
+      </div>
+    );
+  }
+
+  // /comments ルートの場合は、プロジェクトの論点と立場を表示
+  if (isCommentsRoute && project) {
+    return (
+      <div className="bg-white">
         <ProjectQuestionsAndStances project={project} />
       </div>
     );
   }
 
   // /analytics ルート以外で、questionIdが指定されていない場合は、プロジェクト全体のレポートを表示
-  if (!isAnalyticsRoute && !questionId && project) {
+  if (!isAnalyticsRoute && !questionId && !isCommentsRoute && project) {
     return (
       <div className="bg-white">
-        <ProjectQuestionsAndStances project={project} />
+        <ProjectAnalytics project={project} />
       </div>
     );
   }
@@ -126,7 +137,7 @@ export const EmbeddedInsightPage = () => {
           showTitle={true} // 埋め込みビューではタイトルを表示する
         />
       ) : (
-        <ProjectQuestionsAndStances project={project} />
+        <ProjectAnalytics project={project} />
       )}
     </div>
   );
