@@ -55,7 +55,7 @@ async function isRelevantToTopic(content: string, topic: string, context?: strin
   }
 }
 
-export async function extractContent(content: string, extractionTopic?: string, context?: string, customPrompt?: string): Promise<string | null> {
+export async function extractContent(content: string, extractionTopic?: string, context?: string, customPrompt?: string): Promise<string[] | null> {
   if (!extractionTopic) {
     return null;
   }
@@ -80,7 +80,19 @@ export async function extractContent(content: string, extractionTopic?: string, 
 
       console.log('Extraction LLM Output:', text);
 
-      return text.trim();
+      // Split extracted content by new lines and filter out empty strings
+      const extractedContents = text
+        .trim()
+        .split(/\n+/)
+        .map(line => line.trim())
+        .filter(line => line.length > 0);
+      
+      // If we have no extracted content, return null
+      if (extractedContents.length === 0) {
+        return null;
+      }
+      
+      return extractedContents;
     } catch (error: any) {
       console.error(`Error in content extraction (attempt ${retries + 1}/${MAX_RETRIES}):`, error);
       

@@ -142,35 +142,40 @@ POST /projects/:projectId/comments
 - レスポンス:
   ```json
   {
-    "comment": {
-      "content": "コメント内容",
-      "projectId": "プロジェクトID",
-      "extractedContent": "抽出されたコンテンツ",
-      "stances": [
-        {
-          "questionId": "論点ID",
-          "stanceId": "立場ID",
-          "confidence": 0.95
-        }
-      ],
-      "sourceType": "コメントのソースタイプ",
-      "sourceUrl": "コメントのソースURL"
-    },
-    "analyzedQuestions": [
+    "comments": [
       {
-        "id": "論点ID",
-        "text": "論点のテキスト",
+        "content": "コメント内容",
+        "projectId": "プロジェクトID",
+        "extractedContent": "抽出されたコンテンツ1",
         "stances": [
           {
             "questionId": "論点ID",
             "stanceId": "立場ID",
             "confidence": 0.95
           }
-        ]
+        ],
+        "sourceType": "コメントのソースタイプ",
+        "sourceUrl": "コメントのソースURL"
+      },
+      {
+        "content": "コメント内容",
+        "projectId": "プロジェクトID",
+        "extractedContent": "抽出されたコンテンツ2",
+        "stances": [
+          {
+            "questionId": "論点ID",
+            "stanceId": "立場ID",
+            "confidence": 0.90
+          }
+        ],
+        "sourceType": "コメントのソースタイプ",
+        "sourceUrl": "コメントのソースURL"
       }
     ]
   }
   ```
+  
+  注: 一つのコメント内容から複数の主張が抽出された場合、それぞれの主張が別々のコメントとして作成されます。
 
 #### コメントの一括インポート
 ```
