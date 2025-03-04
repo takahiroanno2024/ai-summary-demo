@@ -3,8 +3,8 @@ import { useParams, useSearchParams } from 'react-router-dom';
 import { Project } from '../types/project';
 import { Comment } from '../types/comment';
 import { StanceAnalytics } from '../components/StanceAnalytics';
-import { ProjectAnalytics } from '../components/ProjectAnalytics';
 import { getProject, getComments } from '../config/api';
+import { ProjectAnalytics } from '../components/ProjectAnalytics';
 
 export const EmbeddedInsightPage = () => {
   const { projectId } = useParams<{ projectId: string }>();
@@ -24,7 +24,7 @@ export const EmbeddedInsightPage = () => {
         setIsLoading(false);
         return;
       }
-      
+
       try {
         const [projectData, commentsData] = await Promise.all([
           getProject(projectId),
@@ -61,7 +61,7 @@ export const EmbeddedInsightPage = () => {
   }
 
   return (
-    <div className="bg-white">
+    <div className="bg-white h-[600px] overflow-hidden relative">
       {view === 'stance' ? (
         <StanceAnalytics
           comments={comments}
@@ -71,6 +71,14 @@ export const EmbeddedInsightPage = () => {
       ) : (
         <ProjectAnalytics project={project} />
       )}
+        <div className="absolute bottom-0 left-0 right-0 h-24 bg-gradient-to-t from-white to-transparent flex items-end justify-center pb-4">
+          <button
+            className="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-full text-sm font-medium transition-colors"
+            onClick={() => window.open(window.location.href, '_blank')}
+          >
+            もっと見る
+          </button>
+        </div>
     </div>
   );
 };
