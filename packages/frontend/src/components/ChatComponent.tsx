@@ -29,6 +29,13 @@ export const ChatComponent = ({ projectId }: ChatComponentProps) => {
     ws.onopen = () => {
       setIsConnected(true);
       setError(null);
+      
+      // Send a fake "こんにちは" message when connection is established
+      // but don't display it in the UI
+      ws.send(JSON.stringify({
+        type: 'message',
+        content: 'こんにちは'
+      }));
     };
 
     ws.onmessage = (event) => {
