@@ -45,7 +45,7 @@ export const ChatComponent = ({ projectId }: ChatComponentProps) => {
         if (ws.readyState === WebSocket.OPEN) {
           ws.send(JSON.stringify({ type: 'ping' }));
         }
-      }, 30000); // Send ping every 30 seconds
+      }, 10000); // Send ping every 30 seconds
     };
 
     ws.onmessage = (event) => {
