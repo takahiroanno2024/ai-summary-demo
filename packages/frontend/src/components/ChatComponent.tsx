@@ -25,6 +25,9 @@ export const ChatComponent = ({ projectId }: ChatComponentProps) => {
     const wsUrl = `${import.meta.env.VITE_CHAT_WS_URL || 'ws://localhost:3030'}/project/${projectId}/chat`;
     const ws = new WebSocket(wsUrl);
     wsRef.current = ws;
+    
+    // Ping interval to keep connection alive (every 30 seconds)
+    let pingInterval: number | null = null;
 
     ws.onopen = () => {
       setIsConnected(true);
@@ -36,6 +39,13 @@ export const ChatComponent = ({ projectId }: ChatComponentProps) => {
         type: 'message',
         content: 'こんにちは'
       }));
+      
+      // Setup ping interval to keep connection alive
+      pingInterval = window.setInterval(() => {
+        if (ws.readyState === WebSocket.OPEN) {
+          ws.send(JSON.stringify({ type: 'ping' }));
+        }
+      }, 30000); // Send ping every 30 seconds
     };
 
     ws.onmessage = (event) => {
@@ -65,6 +75,11 @@ export const ChatComponent = ({ projectId }: ChatComponentProps) => {
     };
 
     return () => {
+      // Clear ping interval
+      if (pingInterval) {
+        clearInterval(pingInterval);
+      }
+      
       if (ws.readyState === WebSocket.OPEN) {
         ws.close();
       }

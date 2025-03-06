@@ -313,9 +313,15 @@ async function handleConnection(ws: WebSocket, sessionId: string, projectId: str
     try {
       const message: WebSocketMessage = JSON.parse(data);
       
+      // Handle ping messages to keep connection alive
+      if (message.type === 'ping') {
+        ws.send(JSON.stringify({ type: 'pong' }));
+        return;
+      }
+      
       if (message.type === 'message') {
         // ユーザーメッセージを保存
-        const userMessage = sessionManager.addMessage(sessionId, message.content, 'user');
+        const userMessage = sessionManager.addMessage(sessionId, message.content!, 'user');
         if (!userMessage) {
           ws.send(JSON.stringify({ error: 'Session not found' }));
           return;
@@ -330,14 +336,14 @@ async function handleConnection(ws: WebSocket, sessionId: string, projectId: str
         let response: string;
         
         // "questions"コマンドの処理
-        if (message.content.toLowerCase() === 'questions') {
+        if (message.content!.toLowerCase() === 'questions') {
           const questions = await getProjectQuestions(projectId);
           response = formatQuestionsList(questions);
         } else {
           // Gemini APIを使用して応答を生成
           const questions = await getProjectQuestions(projectId);
           response = await generateResponse(
-            message.content,
+            message.content!,
             projectId,
             questions,
             session.history

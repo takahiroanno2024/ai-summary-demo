@@ -13,8 +13,8 @@ export interface ChatMessage {
 }
 
 export interface WebSocketMessage {
-  type: 'message';
-  content: string;
+  type: 'message' | 'ping' | 'pong';
+  content?: string;
 }
 
 export interface Project {
