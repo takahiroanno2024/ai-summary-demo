@@ -50,7 +50,7 @@ server.on('upgrade', (request, socket, head) => {
 
   const projectId = match[1];
   
-  wss.handleUpgrade(request, socket, head, (ws) => {
+  wss.handleUpgrade(request, socket, head, (ws: WebSocket) => {
     const session = sessionManager.createSession(projectId);
     handleConnection(ws, session.id, projectId);
   });
@@ -138,6 +138,7 @@ ${userMessage}
 - 返答は必ず上記のJSON形式のみとし、説明文や改行を含めないでください
 - JSON内の文字列は必ずダブルクォートで囲んでください
 - 最新の発言のみを分析対象とし、会話履歴は文脈理解のために使用してください
+- できる限り具体的に細部まで主張の内容を記述してください。
 `}]
       }
     ];
@@ -151,7 +152,11 @@ ${userMessage}
     });
 
     // レスポンステキストをクリーンアップしてJSONとしてパース
-    const responseText = result.response.text().trim();
+    let responseText = result.response.text().trim();
+    
+    // マークダウンのコードブロック構文を削除 (```json や ``` で囲まれている場合)
+    responseText = responseText.replace(/^```json\s*/, '').replace(/^```\s*/, '').replace(/\s*```$/, '');
+    
     let analysisResult;
     try {
       analysisResult = JSON.parse(responseText);
@@ -180,7 +185,7 @@ ${userMessage}
 
     // 分析された論点と立場の情報を整形
     const relatedQuestions = commentResponse.data.analyzedQuestions
-      .map(q => {
+      .map((q: {id: string; text: string; stances: Array<{questionId: string; stanceId: string; confidence: number}>}) => {
         const stance = q.stances[0]; // 最も確信度の高い立場を使用
         if (!stance) return null;
         return {
@@ -192,7 +197,7 @@ ${userMessage}
           }
         };
       })
-      .filter((q): q is NonNullable<typeof q> => q !== null); // 立場が特定された論点のみを返す
+      .filter((q: any): q is NonNullable<typeof q> => q !== null); // 立場が特定された論点のみを返す
 
     return {
       commentId: commentResponse.data.comment._id,
@@ -367,7 +372,7 @@ async function handleConnection(ws: WebSocket, sessionId: string, projectId: str
     console.log(`Connection closed for session: ${sessionId}`);
   });
 
-  ws.on('error', (error) => {
+  ws.on('error', (error: Error) => {
     console.error(`WebSocket error in session ${sessionId}:`, error);
   });
 }
