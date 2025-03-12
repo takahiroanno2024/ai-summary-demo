@@ -2,12 +2,14 @@ import { Project } from '../models/project';
 import { Comment } from '../models/comment';
 import { StanceReportGenerator } from './stanceReportGenerator';
 import { ProjectReportGenerator } from './projectReportGenerator';
+import { ProjectVisualReportGenerator } from './projectVisualReportGenerator';
 import { AppError } from '../middleware/errorHandler';
 
 export class AnalysisService {
   constructor(
     private stanceReportGenerator: StanceReportGenerator,
-    private projectReportGenerator: ProjectReportGenerator
+    private projectReportGenerator: ProjectReportGenerator,
+    private projectVisualReportGenerator: ProjectVisualReportGenerator
   ) {}
 
   async analyzeStances(
@@ -47,6 +49,22 @@ export class AnalysisService {
     const comments = await Comment.find({ projectId });
     
     return await this.projectReportGenerator.generateProjectReport(
+      project,
+      comments,
+      forceRegenerate,
+      customPrompt
+    );
+  }
+
+  async generateProjectVisualReport(projectId: string, forceRegenerate: boolean = false, customPrompt?: string) {
+    const project = await Project.findById(projectId);
+    if (!project) {
+      throw new AppError(404, 'Project not found');
+    }
+
+    const comments = await Comment.find({ projectId });
+    
+    return await this.projectVisualReportGenerator.generateProjectVisualReport(
       project,
       comments,
       forceRegenerate,

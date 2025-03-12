@@ -19,7 +19,7 @@ interface StanceStats {
   comments: Comment[];
 }
 
-export const StanceAnalytics = ({ comments, project, initialQuestionId }: StanceAnalyticsProps) => {
+export const StanceReport = ({ comments, project, initialQuestionId }: StanceAnalyticsProps) => {
   const navigate = useNavigate();
   const location = useLocation();
   const [isAdmin] = useState(() => !!localStorage.getItem('adminKey'));

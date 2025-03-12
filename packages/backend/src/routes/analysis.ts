@@ -2,14 +2,17 @@ import express from 'express';
 import { AnalysisService } from '../services/analysisService';
 import { StanceReportGenerator } from '../services/stanceReportGenerator';
 import { ProjectReportGenerator } from '../services/projectReportGenerator';
+import { ProjectVisualReportGenerator } from '../services/projectVisualReportGenerator';
 import { validateObjectId } from '../middleware/validateObjectId';
 
 const router = express.Router();
 
 // サービスのインスタンスを作成
-const stanceReportGenerator = new StanceReportGenerator(process.env.OPENROUTER_API_KEY || '');
-const projectReportGenerator = new ProjectReportGenerator(process.env.OPENROUTER_API_KEY || '');
-const analysisService = new AnalysisService(stanceReportGenerator, projectReportGenerator);
+const apiKey = process.env.OPENROUTER_API_KEY || '';
+const stanceReportGenerator = new StanceReportGenerator(apiKey);
+const projectReportGenerator = new ProjectReportGenerator(apiKey);
+const projectVisualReportGenerator = new ProjectVisualReportGenerator(apiKey);
+const analysisService = new AnalysisService(stanceReportGenerator, projectReportGenerator, projectVisualReportGenerator);
 
 // 質問ごとの立場の分析を取得
 router.get('/projects/:projectId/questions/:questionId/stance-analysis',
@@ -34,7 +37,7 @@ router.get('/projects/:projectId/questions/:questionId/stance-analysis',
   }
 );
 
-// プロジェクト全体の分析レポートを生成
+// プロジェクト全体の分析レポートを生成 (Markdown)
 router.get('/projects/:projectId/analysis',
   validateObjectId('projectId'),
   async (req, res, next) => {
@@ -44,6 +47,28 @@ router.get('/projects/:projectId/analysis',
       const customPrompt = req.query.customPrompt as string | undefined;
       
       const analysis = await analysisService.generateProjectReport(
+        projectId,
+        forceRegenerate,
+        customPrompt
+      );
+      
+      res.json(analysis);
+    } catch (error) {
+      next(error);
+    }
+  }
+);
+
+// プロジェクト全体のビジュアル分析レポートを生成 (HTML+CSS)
+router.get('/projects/:projectId/visual-analysis',
+  validateObjectId('projectId'),
+  async (req, res, next) => {
+    try {
+      const projectId = req.params.projectId;
+      const forceRegenerate = req.query.forceRegenerate === 'true';
+      const customPrompt = req.query.customPrompt as string | undefined;
+      
+      const analysis = await analysisService.generateProjectVisualReport(
         projectId,
         forceRegenerate,
         customPrompt

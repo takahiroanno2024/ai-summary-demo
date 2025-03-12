@@ -13,7 +13,7 @@ interface ProjectAnalysisResult {
   overallAnalysis: string;
 }
 
-export const ProjectAnalytics = ({ project }: ProjectAnalyticsProps) => {
+export const ProjectReport = ({ project }: ProjectAnalyticsProps) => {
   const [analysisResult, setAnalysisResult] = useState<ProjectAnalysisResult | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);

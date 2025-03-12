@@ -222,6 +222,49 @@ export const generateProjectReport = async (
   return response.json();
 };
 
+export const generateProjectVisualReport = async (
+  projectId: string,
+  forceRegenerate: boolean = false
+): Promise<any> => {
+  const customPrompt = getCustomPrompt('projectReport'); // Using the same prompt type for now
+  
+  console.log('Generating visual report for project:', projectId);
+  console.log('Force regenerate:', forceRegenerate);
+  
+  const queryParams = new URLSearchParams({
+    ...(forceRegenerate && { forceRegenerate: 'true' }),
+    ...(customPrompt && { customPrompt })
+  });
+  
+  const endpoint = `${API_URL}/projects/${projectId}/visual-analysis?${queryParams}`;
+  console.log('Visual report endpoint:', endpoint);
+
+  try {
+    const response = await fetch(endpoint, {
+      headers: getHeaders(),
+    });
+
+    console.log('Visual report response status:', response.status);
+    
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error('Visual report generation failed:', {
+        status: response.status,
+        statusText: response.statusText,
+        error: errorText
+      });
+      throw new Error('ビジュアルプロジェクトレポートの生成に失敗しました');
+    }
+    
+    const result = await response.json();
+    console.log('Visual report result:', result);
+    return result;
+  } catch (error) {
+    console.error('Visual report error:', error);
+    throw error;
+  }
+};
+
 // プロジェクト関連のAPI
 export const getProject = async (projectId: string) => {
   const response = await fetch(`${API_URL}/projects/${projectId}`, {

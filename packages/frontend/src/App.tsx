@@ -41,12 +41,14 @@ function App() {
             <Route path="comments" element={<ProjectPage />} />
             <Route path="analytics" element={<ProjectPage />} />
             <Route path="overall" element={<ProjectPage />} />
+            <Route path="visual" element={<ProjectPage />} />
             <Route path="chat" element={<ProjectPage />} />
           </Route>
           <Route path="/csv-upload" element={<CsvUploadPage />} />
           <Route path="/adminauth" element={<AdminAuthPage />} />
           <Route path="/prompt-settings" element={<PromptSettingsPage />} />
           <Route path="/embed/projects/:projectId/overall" element={<EmbeddedInsightPage />} />
+          <Route path="/embed/projects/:projectId/visual" element={<EmbeddedInsightPage />} />
           <Route path="/embed/projects/:projectId/analytics" element={<EmbeddedInsightPage />} />
           <Route path="/embed/projects/:projectId/comments" element={<EmbeddedInsightPage />} />
           <Route path="/embed/insights/:projectId" element={<EmbeddedInsightPage />} />

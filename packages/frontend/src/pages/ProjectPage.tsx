@@ -5,8 +5,9 @@ import { Comment, CommentInput, CommentOptions } from '../types/comment';
 import { CommentList } from '../components/CommentList';
 import { ProjectQuestionsAndStances } from '../components/ProjectQuestionsAndStances';
 import { CommentForm } from '../components/CommentForm';
-import { StanceAnalytics } from '../components/StanceAnalytics';
-import { ProjectAnalytics } from '../components/ProjectAnalytics';
+import { StanceReport } from '../components/StanceReport';
+import { ProjectReport } from '../components/ProjectReport';
+import { ProjectVisualReport } from '../components/ProjectVisualReport';
 import { QuestionGenerationButton } from '../components/QuestionGenerationButton';
 import { ChatComponent } from '../components/ChatComponent';
 import { getProject, getComments, addComment, generateQuestions } from '../config/api';
@@ -26,11 +27,11 @@ export const ProjectPage = () => {
 
   const activeTab = useMemo(() => {
     const path = location.pathname.split('/').pop();
-    if (path === 'comments' || path === 'analytics' || path === 'overall' || path === 'chat') {
+    if (path === 'comments' || path === 'analytics' || path === 'overall' || path === 'chat' || path === 'visual') {
       return path;
     }
     return 'overall';
-  }, [location.pathname]) as 'comments' | 'analytics' | 'overall' | 'chat';
+  }, [location.pathname]) as 'comments' | 'analytics' | 'overall' | 'chat' | 'visual';
 
   // 初期リダイレクト
   useEffect(() => {
@@ -144,6 +145,19 @@ export const ProjectPage = () => {
             全体の分析
           </Link>
           <Link
+            to={`/projects/${projectId}/visual`}
+            className={`
+              whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm
+              ${
+                activeTab === 'visual'
+                  ? 'border-blue-500 text-blue-600'
+                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+              }
+            `}
+          >
+            ビジュアル分析
+          </Link>
+          <Link
             to={`/projects/${projectId}/analytics`}
             className={`
               whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm
@@ -230,7 +244,7 @@ export const ProjectPage = () => {
                 />
               </div>
             )}
-            <StanceAnalytics
+            <StanceReport
               comments={comments}
               project={project}
               initialQuestionId={questionId}
@@ -239,7 +253,11 @@ export const ProjectPage = () => {
         )}
 
         {activeTab === 'overall' && (
-          <ProjectAnalytics project={project} />
+          <ProjectReport project={project} />
+        )}
+
+        {activeTab === 'visual' && (
+          <ProjectVisualReport project={project} />
         )}
 
         {activeTab === 'chat' && (

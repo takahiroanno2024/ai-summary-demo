@@ -4,7 +4,8 @@ import { Project } from '../types/project';
 import { Comment } from '../types/comment';
 import { StanceGraphComponent } from '../components/StanceGraphComponent';
 import { ProjectQuestionsAndStances } from '../components/ProjectQuestionsAndStances';
-import { ProjectAnalytics } from '../components/ProjectAnalytics';
+import { ProjectReport } from '../components/ProjectReport';
+import { ProjectVisualReport } from '../components/ProjectVisualReport';
 import { getProject, getComments } from '../config/api';
 
 export const EmbeddedInsightPage = () => {
@@ -20,6 +21,7 @@ export const EmbeddedInsightPage = () => {
   const view = searchParams.get('view') || 'stance';
   const questionId = searchParams.get('question');
   const isOverallRoute = location.pathname.endsWith('/overall');
+  const isVisualRoute = location.pathname.endsWith('/visual');
   const isAnalyticsRoute = location.pathname.endsWith('/analytics');
   const isCommentsRoute = location.pathname.endsWith('/comments');
 
@@ -101,7 +103,16 @@ export const EmbeddedInsightPage = () => {
   if (isOverallRoute && project) {
     return (
       <div className="bg-white">
-        <ProjectAnalytics project={project} />
+        <ProjectReport project={project} />
+      </div>
+    );
+  }
+
+  // /visual ルートの場合は、プロジェクト全体のビジュアルレポートを表示
+  if (isVisualRoute && project) {
+    return (
+      <div className="bg-white">
+        <ProjectVisualReport project={project} />
       </div>
     );
   }
@@ -119,7 +130,7 @@ export const EmbeddedInsightPage = () => {
   if (!isAnalyticsRoute && !questionId && !isCommentsRoute && project) {
     return (
       <div className="bg-white">
-        <ProjectAnalytics project={project} />
+        <ProjectReport project={project} />
       </div>
     );
   }
@@ -153,7 +164,7 @@ export const EmbeddedInsightPage = () => {
           </div>
         </div>
       ) : (
-        <ProjectAnalytics project={project} />
+        <ProjectReport project={project} />
       )}
     </div>
   );
