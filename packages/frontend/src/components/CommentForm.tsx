@@ -1,15 +1,16 @@
 import { useState } from 'react';
 import { Project } from '../types/project';
-import { CommentSourceType } from '../types/comment';
+import { CommentInput, CommentOptions } from '../types/comment';
 
 interface CommentFormProps {
-  onSubmit: (data: { content: string; sourceType?: CommentSourceType; sourceUrl?: string }) => Promise<void>;
+  onSubmit: (data: CommentInput, options: CommentOptions) => Promise<void>;
   project: Project;
   isAdmin?: boolean;
 }
 
 export const CommentForm = ({ onSubmit, isAdmin = false }: CommentFormProps) => {
   const [content, setContent] = useState('');
+  const [skipDuplicates, setSkipDuplicates] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   // admin権限がない場合は何も表示しない
@@ -23,10 +24,13 @@ export const CommentForm = ({ onSubmit, isAdmin = false }: CommentFormProps) => 
 
     setIsSubmitting(true);
     try {
-      await onSubmit({
-        content,
-        sourceType: 'form',
-      });
+      await onSubmit(
+        {
+          content,
+          sourceType: 'form',
+        },
+        { skipDuplicates }
+      );
       setContent('');
     } catch (error) {
       console.error('Error submitting comment:', error);
@@ -51,6 +55,19 @@ export const CommentForm = ({ onSubmit, isAdmin = false }: CommentFormProps) => 
             required
           />
         </div>
+      </div>
+
+      <div className="flex items-center">
+        <input
+          id="skipDuplicates"
+          type="checkbox"
+          checked={skipDuplicates}
+          onChange={(e) => setSkipDuplicates(e.target.checked)}
+          className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+        />
+        <label htmlFor="skipDuplicates" className="ml-2 block text-sm text-gray-700">
+          重複コメントをスキップする
+        </label>
       </div>
 
       <button

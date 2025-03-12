@@ -1,7 +1,7 @@
 import { useEffect, useState, useMemo } from 'react';
 import { useParams, useLocation, useNavigate, Link } from 'react-router-dom';
 import { Project } from '../types/project';
-import { Comment, CommentSourceType } from '../types/comment';
+import { Comment, CommentInput, CommentOptions } from '../types/comment';
 import { CommentList } from '../components/CommentList';
 import { ProjectQuestionsAndStances } from '../components/ProjectQuestionsAndStances';
 import { CommentForm } from '../components/CommentForm';
@@ -65,9 +65,9 @@ export const ProjectPage = () => {
     }
   };
 
-  const handleSubmitComment = async (data: { content: string; sourceType?: CommentSourceType; sourceUrl?: string }) => {
+  const handleSubmitComment = async (data: CommentInput, options: CommentOptions) => {
     try {
-      await addComment(projectId!, data);
+      await addComment(projectId!, data, options);
       await fetchComments();
       setError('');
     } catch (err) {

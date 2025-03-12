@@ -136,9 +136,11 @@ POST /projects/:projectId/comments
   {
     "content": "コメント内容",
     "sourceType": "コメントのソースタイプ",
-    "sourceUrl": "コメントのソースURL"
+    "sourceUrl": "コメントのソースURL",
+    "skipDuplicates": true
   }
   ```
+  注: `skipDuplicates`パラメータはオプションで、デフォルトは`true`です。`true`の場合、同じ内容のコメントが既に存在する場合は追加されません。
 - レスポンス:
   ```json
   {
@@ -199,9 +201,11 @@ POST /projects/:projectId/comments/bulk
         "sourceType": "ソースタイプ2",
         "sourceUrl": "ソースURL2"
       }
-    ]
+    ],
+    "skipDuplicates": true
   }
   ```
+  注: `skipDuplicates`パラメータはオプションで、デフォルトは`true`です。`true`の場合、同じ内容のコメントが既に存在する場合は追加されません。
 - レスポンス: インポートされたコメントの配列
 
 ### 分析レポート API

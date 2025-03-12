@@ -27,12 +27,16 @@ router.post('/projects/:projectId/comments',
   validateObjectId('projectId'),
   async (req, res, next) => {
     try {
-      const { content, sourceType, sourceUrl } = req.body;
-      const result = await commentService.createComment(req.params.projectId, {
-        content,
-        sourceType,
-        sourceUrl
-      });
+      const { content, sourceType, sourceUrl, skipDuplicates } = req.body;
+      const result = await commentService.createComment(
+        req.params.projectId,
+        {
+          content,
+          sourceType,
+          sourceUrl
+        },
+        { skipDuplicates }
+      );
       res.status(201).json(result);
     } catch (error) {
       next(error);
@@ -45,10 +49,11 @@ router.post('/projects/:projectId/comments/bulk',
   validateObjectId('projectId'),
   async (req, res, next) => {
     try {
-      const { comments } = req.body;
+      const { comments, skipDuplicates } = req.body;
       const savedComments = await commentService.bulkImportComments(
         req.params.projectId,
-        comments
+        comments,
+        { skipDuplicates }
       );
       res.status(201).json(savedComments);
     } catch (error) {

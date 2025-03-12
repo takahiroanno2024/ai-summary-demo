@@ -6,6 +6,16 @@ export interface CommentStance {
   confidence: number;  // Gemini APIの判定信頼度
 }
 
+export interface CommentInput {
+  content: string;
+  sourceType?: CommentSourceType;
+  sourceUrl?: string;
+}
+
+export interface CommentOptions {
+  skipDuplicates?: boolean; // Whether to skip duplicate comments, defaults to true
+}
+
 export interface Comment {
   _id: string;
   content: string;

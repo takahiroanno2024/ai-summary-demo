@@ -12,6 +12,10 @@ export interface CommentInput {
   sourceUrl?: string;
 }
 
+export interface CommentOptions {
+  skipDuplicates?: boolean; // Whether to skip duplicate comments, defaults to true
+}
+
 export interface CommentCreateResponse {
   comments: (mongoose.Document<unknown, {}, IComment> & IComment & { _id: mongoose.Types.ObjectId })[];
 }
@@ -27,16 +31,43 @@ export class CommentService {
 
   private filterValidStances(stances: StanceAnalysisResult[]): ICommentStance[] {
     return stances
-      .filter((stance): stance is ICommentStance => 
-        stance.stanceId !== null && 
+      .filter((stance): stance is ICommentStance =>
+        stance.stanceId !== null &&
         stance.confidence !== null
       );
   }
 
-  async createComment(projectId: string, commentData: CommentInput): Promise<CommentCreateResponse> {
+  /**
+   * Check if a comment with the same content already exists in the project
+   * @param projectId The project ID
+   * @param content The original content to check for duplicates
+   * @returns true if a duplicate exists, false otherwise
+   */
+  private async isDuplicateComment(projectId: string, content: string): Promise<boolean> {
+    const existingComment = await Comment.findOne({
+      projectId,
+      content
+    });
+    
+    return !!existingComment;
+  }
+
+  async createComment(projectId: string, commentData: CommentInput, options?: CommentOptions): Promise<CommentCreateResponse> {
     const project = await Project.findById(projectId);
     if (!project) {
       throw new AppError(404, 'Project not found');
+    }
+
+    // Check if a comment with the same content already exists
+    const isDuplicate = await this.isDuplicateComment(projectId, commentData.content);
+    // Skip duplicates by default unless skipDuplicates is explicitly set to false
+    const shouldSkipDuplicates = options?.skipDuplicates !== false;
+    
+    if (isDuplicate && shouldSkipDuplicates) {
+      // Return empty array if duplicate and we should skip duplicates
+      return {
+        comments: []
+      };
     }
 
     const extractedContents = await extractContent(commentData.content, project.extractionTopic, project.context);
@@ -93,7 +124,7 @@ export class CommentService {
     };
   }
 
-  async bulkImportComments(projectId: string, comments: (string | CommentInput)[]) {
+  async bulkImportComments(projectId: string, comments: (string | CommentInput)[], options?: CommentOptions) {
     if (!Array.isArray(comments)) {
       throw new AppError(400, 'Comments must be an array');
     }
@@ -115,6 +146,16 @@ export class CommentService {
         const content = typeof comment === 'string' ? comment : comment.content;
         const sourceType = typeof comment === 'string' ? 'other' : (comment.sourceType || 'other');
         const sourceUrl = typeof comment === 'string' ? '' : (comment.sourceUrl || '');
+        
+        // Skip duplicates by default unless skipDuplicates is explicitly set to false
+        const shouldSkipDuplicates = options?.skipDuplicates !== false;
+
+        // Check if a comment with the same content already exists
+        const isDuplicate = await this.isDuplicateComment(projectId, content);
+        if (isDuplicate && shouldSkipDuplicates) {
+          // Skip this comment if it's a duplicate and we should skip duplicates
+          return null;
+        }
 
         const extractedContents = await extractContent(content, project.extractionTopic, project.context);
         

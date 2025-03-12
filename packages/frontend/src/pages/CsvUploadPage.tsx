@@ -1,7 +1,7 @@
 import React, { useState, useCallback, useRef, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { createProjectWithCsv, uploadCommentsBulk, generateQuestions as generateProjectQuestions } from '../config/api';
-import { CommentSourceType } from '../types/comment';
+import { CommentSourceType, CommentInput, CommentOptions } from '../types/comment';
 import Papa from 'papaparse';
 import type { ParseResult } from 'papaparse';
 
@@ -28,6 +28,7 @@ const CsvUploadPage: React.FC = () => {
     totalRows: number;
     isValid: boolean;
   } | null>(null);
+  const [skipDuplicates, setSkipDuplicates] = useState<boolean>(true);
 
   // Progress states
   const [progress, setProgress] = useState<number>(0);
@@ -130,15 +131,15 @@ const CsvUploadPage: React.FC = () => {
       }
 
       const batch = data.slice(i, i + batchSize);
-      const comments = batch.map(row => ({
+      const comments: CommentInput[] = batch.map(row => ({
         content: row.content,
         sourceType: row.sourceType || 'other',
-        sourceUrl: row.sourceUrl || '',
-        stances: []
+        sourceUrl: row.sourceUrl || ''
       }));
 
       try {
-        await uploadCommentsBulk(currentProjectId, comments);
+        const options: CommentOptions = { skipDuplicates };
+        await uploadCommentsBulk(currentProjectId, comments, options);
         processedBatches++;
         const newProgress = (processedBatches / totalBatches) * 100;
         setProgress(newProgress);
@@ -328,15 +329,28 @@ const CsvUploadPage: React.FC = () => {
               必要な列: content, sourceType ('youtube' | 'x' | 'form' | 'other' | null), sourceUrl (optional)
             </p>
           </div>
-
-          {selectedFile && previewData?.isValid && !isProcessing && (
-            <button
-              onClick={handleStartUpload}
-              className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 disabled:bg-gray-400"
-            >
-              アップロード開始
-            </button>
-          )}
+{selectedFile && previewData?.isValid && !isProcessing && (
+  <div>
+    <div className="flex items-center mt-4">
+      <input
+        id="skipDuplicates"
+        type="checkbox"
+        checked={skipDuplicates}
+        onChange={(e) => setSkipDuplicates(e.target.checked)}
+        className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+      />
+      <label htmlFor="skipDuplicates" className="ml-2 block text-sm text-gray-700">
+        コメントが重複している場合に追加しない
+      </label>
+    </div>
+    <button
+      onClick={handleStartUpload}
+      className="mt-4 px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 disabled:bg-gray-400"
+    >
+      アップロード開始
+    </button>
+  </div>
+)}
         </div>
       )}
 

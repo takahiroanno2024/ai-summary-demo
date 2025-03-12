@@ -243,15 +243,16 @@ export const getComments = async (projectId: string) => {
   return response.json();
 };
 
-export const addComment = async (projectId: string, data: {
-  content: string;
-  sourceType?: string;
-  sourceUrl?: string;
-}) => {
+import { CommentInput, CommentOptions } from '../types/comment';
+
+export const addComment = async (projectId: string, data: CommentInput, options?: CommentOptions) => {
   const response = await fetch(`${API_URL}/projects/${projectId}/comments`, {
     method: 'POST',
     headers: getHeaders(),
-    body: JSON.stringify(data),
+    body: JSON.stringify({
+      ...data,
+      skipDuplicates: options?.skipDuplicates
+    }),
   });
   if (!response.ok) {
     throw new Error('コメントの投稿に失敗しました');
@@ -292,16 +293,18 @@ export const createProjectWithCsv = async (data: {
   return response.json();
 };
 
-export const uploadCommentsBulk = async (projectId: string, comments: {
-  content: string;
-  sourceType?: string;
-  sourceUrl?: string;
-  stances: any[];
-}[]) => {
+export const uploadCommentsBulk = async (
+  projectId: string,
+  comments: CommentInput[],
+  options?: CommentOptions
+) => {
   const response = await fetch(`${API_URL}/projects/${projectId}/comments/bulk`, {
     method: 'POST',
     headers: getHeaders(),
-    body: JSON.stringify({ comments }),
+    body: JSON.stringify({
+      comments,
+      skipDuplicates: options?.skipDuplicates
+    }),
   });
   if (!response.ok) {
     throw new Error('コメントのアップロードに失敗しました');
