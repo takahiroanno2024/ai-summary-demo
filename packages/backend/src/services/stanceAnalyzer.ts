@@ -1,4 +1,4 @@
-import { GoogleGenerativeAI } from '@google/generative-ai';
+import OpenAI from 'openai';
 import { stancePrompts } from '../config/prompts';
 
 export interface StanceAnalysisResult {
@@ -8,11 +8,12 @@ export interface StanceAnalysisResult {
 }
 
 export class StanceAnalyzer {
-  private genAI: GoogleGenerativeAI;
-  private model: any;
+  private openai: OpenAI;
   constructor(apiKey: string) {
-    this.genAI = new GoogleGenerativeAI(apiKey);
-    this.model = this.genAI.getGenerativeModel({ model: 'gemini-2.0-flash' });
+    this.openai = new OpenAI({
+      baseURL: 'https://openrouter.ai/api/v1',
+      apiKey: apiKey,
+    });
   }
 
   private async delay(ms: number): Promise<void> {
@@ -79,8 +80,18 @@ export class StanceAnalyzer {
         console.log('Generated Prompt:', prompt);
         
         await this.enforceRateLimit();
-        const result = await this.model.generateContent(prompt);
-        const response = result.response.text();
+        
+        const completion = await this.openai.chat.completions.create({
+          model: 'google/gemini-2.0-flash-001',
+          messages: [
+            {
+              role: 'user',
+              content: prompt,
+            },
+          ],
+        });
+        
+        const response = completion.choices[0].message.content || '';
         console.log('LLM Response:', response);
         
         const { stance, confidence } = await this.parseResponse(response);

@@ -7,8 +7,8 @@ import { validateObjectId } from '../middleware/validateObjectId';
 const router = express.Router();
 
 // サービスのインスタンスを作成
-const stanceAnalyzer = new StanceAnalyzer(process.env.GEMINI_API_KEY || '');
-const questionGenerator = new QuestionGenerator(process.env.GEMINI_API_KEY || '');
+const stanceAnalyzer = new StanceAnalyzer(process.env.OPENROUTER_API_KEY || '');
+const questionGenerator = new QuestionGenerator(process.env.OPENROUTER_API_KEY || '');
 const projectService = new ProjectService(stanceAnalyzer, questionGenerator);
 
 // プロジェクト一覧の取得

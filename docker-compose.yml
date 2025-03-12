@@ -39,7 +39,7 @@ services:
       - ./packages/backend/.env
     environment:
       - MONGODB_URI=mongodb://${MONGO_APP_USERNAME}:${MONGO_APP_PASSWORD}@mongodb:27017/comment-system?authSource=comment-system
-      - GEMINI_API_KEY=${GEMINI_API_KEY}
+      - OPENROUTER_API_KEY=${OPENROUTER_API_KEY}
       - PORT=3001
     depends_on:
       - mongodb
@@ -62,7 +62,7 @@ services:
     environment:
       - PORT=3030
       - BACKEND_API_URL=http://backend:3001/api
-      - GEMINI_API_KEY=${GEMINI_API_KEY}
+      - OPENROUTER_API_KEY=${OPENROUTER_API_KEY}
       - ADMIN_API_KEY=${ADMIN_API_KEY}
     depends_on:
       - backend

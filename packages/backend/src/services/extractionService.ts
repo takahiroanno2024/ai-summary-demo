@@ -1,13 +1,15 @@
-import { GoogleGenerativeAI } from '@google/generative-ai';
+import OpenAI from 'openai';
 import { extractionPrompts } from '../config/prompts';
 
-const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
-if (!GEMINI_API_KEY) {
-  throw new Error('GEMINI_API_KEY is required in environment variables');
+const OPENROUTER_API_KEY = process.env.OPENROUTER_API_KEY;
+if (!OPENROUTER_API_KEY) {
+  throw new Error('OPENROUTER_API_KEY is required in environment variables');
 }
 
-const genAI = new GoogleGenerativeAI(GEMINI_API_KEY);
-const model = genAI.getGenerativeModel({ model: 'gemini-2.0-flash' });
+const openai = new OpenAI({
+  baseURL: 'https://openrouter.ai/api/v1',
+  apiKey: OPENROUTER_API_KEY,
+});
 
 const MAX_RETRIES = 3;
 const INITIAL_RETRY_DELAY = 1000; // 1秒
@@ -24,10 +26,17 @@ async function isRelevantToTopic(content: string, topic: string, context?: strin
       const prompt = extractionPrompts.relevanceCheck(topic, context, customPrompt).replace('{content}', content);
       console.log('Relevance Check LLM Input:', prompt);
 
-      const result = await model.generateContent(prompt);
-      const response = result.response;
-      const text = response.text();
+      const completion = await openai.chat.completions.create({
+        model: 'google/gemini-2.0-flash-001',
+        messages: [
+          {
+            role: 'user',
+            content: prompt,
+          },
+        ],
+      });
 
+      const text = completion.choices[0].message.content || '';
       console.log('Relevance Check LLM Output:', text);
 
       return text.trim() === "RELEVANT";
@@ -74,18 +83,25 @@ export async function extractContent(content: string, extractionTopic?: string, 
       const prompt = extractionPrompts.contentExtraction(extractionTopic, context, customPrompt).replace('{content}', content);
       console.log('Extraction LLM Input:', prompt);
 
-      const result = await model.generateContent(prompt);
-      const response = result.response;
-      const text = response.text();
+      const completion = await openai.chat.completions.create({
+        model: 'google/gemini-2.0-flash-001',
+        messages: [
+          {
+            role: 'user',
+            content: prompt,
+          },
+        ],
+      });
 
+      const text = completion.choices[0].message.content || '';
       console.log('Extraction LLM Output:', text);
 
       // Split extracted content by new lines and filter out empty strings
       const extractedContents = text
         .trim()
         .split(/\n+/)
-        .map(line => line.trim())
-        .filter(line => line.length > 0);
+        .map((line: string) => line.trim())
+        .filter((line: string) => line.length > 0);
       
       // If we have no extracted content, return null
       if (extractedContents.length === 0) {

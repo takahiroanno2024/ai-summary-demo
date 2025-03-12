@@ -1,4 +1,4 @@
-import { GoogleGenerativeAI } from '@google/generative-ai';
+import OpenAI from 'openai';
 import { questionPrompts } from '../config/prompts';
 
 export interface GeneratedQuestion {
@@ -7,14 +7,15 @@ export interface GeneratedQuestion {
 }
 
 export class QuestionGenerator {
-    private genAI: GoogleGenerativeAI;
-    private model: any;
+    private openai: OpenAI;
     private lastRequestTime: number = 0;
     private readonly MIN_DELAY_MS: number = 1000; // 1秒の最小遅延
 
     constructor(apiKey: string) {
-        this.genAI = new GoogleGenerativeAI(apiKey);
-        this.model = this.genAI.getGenerativeModel({ model: 'gemini-2.0-flash' });
+        this.openai = new OpenAI({
+            baseURL: 'https://openrouter.ai/api/v1',
+            apiKey: apiKey,
+        });
     }
 
     private async delay(ms: number): Promise<void> {
@@ -51,8 +52,18 @@ export class QuestionGenerator {
             
             await this.enforceRateLimit();
             console.log('Sending prompt to LLM...');
-            const result = await this.model.generateContent(prompt);
-            const response = await result.response.text();
+            
+            const completion = await this.openai.chat.completions.create({
+                model: 'google/gemini-2.0-flash-001',
+                messages: [
+                    {
+                        role: 'user',
+                        content: prompt,
+                    },
+                ],
+            });
+            
+            const response = completion.choices[0].message.content || '';
             console.log('LLM Response:', response);
             
             return this.parseResponse(response);

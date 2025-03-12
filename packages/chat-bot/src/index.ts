@@ -2,7 +2,7 @@ import express from 'express';
 import { createServer } from 'http';
 import { WebSocket, WebSocketServer } from 'ws';
 import axios from 'axios';
-import { GoogleGenerativeAI, HarmCategory, HarmBlockThreshold } from '@google/generative-ai';
+import OpenAI from 'openai';
 import { SessionManager } from './services/SessionManager';
 import { WebSocketMessage, Project, ChatMessage } from './types';
 
@@ -11,16 +11,16 @@ const server = createServer(app);
 const wss = new WebSocketServer({ noServer: true });
 const sessionManager = new SessionManager();
 
-// Gemini APIの初期化
-const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
-if (!GEMINI_API_KEY) {
-  console.error('Error: GEMINI_API_KEY is not set in environment variables');
+// OpenRouter APIの初期化
+const OPENROUTER_API_KEY = process.env.OPENROUTER_API_KEY;
+if (!OPENROUTER_API_KEY) {
+  console.error('Error: OPENROUTER_API_KEY is not set in environment variables');
   process.exit(1);
 }
 
-const genAI = new GoogleGenerativeAI(GEMINI_API_KEY);
-const model = genAI.getGenerativeModel({ 
-  model: 'gemini-2.0-flash',
+const openai = new OpenAI({
+  baseURL: 'https://openrouter.ai/api/v1',
+  apiKey: OPENROUTER_API_KEY,
 });
 
 // バックエンドAPIの設定
@@ -143,16 +143,20 @@ ${userMessage}
       }
     ];
 
-    const result = await model.generateContent({
-      contents: messages,
-      generationConfig: {
-        temperature: 0.3,
-        maxOutputTokens: 1024,
-      },
+    const completion = await openai.chat.completions.create({
+      model: 'google/gemini-2.0-flash-001',
+      messages: [
+        {
+          role: 'user',
+          content: messages[0].parts[0].text,
+        },
+      ],
+      temperature: 0.3,
+      max_tokens: 1024,
     });
 
     // レスポンステキストをクリーンアップしてJSONとしてパース
-    let responseText = result.response.text().trim();
+    let responseText = completion.choices[0].message.content?.trim() || '';
     
     // マークダウンのコードブロック構文を削除 (```json や ``` で囲まれている場合)
     responseText = responseText.replace(/^```json\s*/, '').replace(/^```\s*/, '').replace(/\s*```$/, '');
@@ -287,18 +291,32 @@ ${contextualInfo ? contextualInfo : ''}
       parts: [{text: userMessage}]
     });
 
-    const result = await model.generateContent({
-      contents: messages,
-      generationConfig: {
-        temperature: 0.7,
-        topK: 40,
-        topP: 0.95,
-        maxOutputTokens: 1024,
-      },
+    // OpenAI形式のメッセージに変換
+    const openaiMessages: Array<{role: 'system' | 'user' | 'assistant', content: string}> = [];
+    
+    // システムプロンプトを追加
+    openaiMessages.push({
+      role: 'system',
+      content: messages[0].parts[0].text,
+    });
+    
+    // チャット履歴を追加
+    for (let i = 1; i < messages.length; i++) {
+      openaiMessages.push({
+        role: messages[i].role === 'user' ? 'user' : 'assistant',
+        content: messages[i].parts[0].text,
+      });
+    }
+    
+    const completion = await openai.chat.completions.create({
+      model: 'google/gemini-2.0-flash-001',
+      messages: openaiMessages,
+      temperature: 0.7,
+      top_p: 0.95,
+      max_tokens: 1024,
     });
 
-    const response = await result.response;
-    return response.text();
+    return completion.choices[0].message.content || '';
   } catch (error) {
     console.error('Error generating response:', error);
     if (error instanceof Error) {

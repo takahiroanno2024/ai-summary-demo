@@ -1,4 +1,4 @@
-import { GoogleGenerativeAI } from '@google/generative-ai';
+import OpenAI from 'openai';
 import mongoose from 'mongoose';
 import { IProject } from '../models/project';
 import { IComment } from '../models/comment';
@@ -12,13 +12,14 @@ export interface ProjectAnalysisResult {
 }
 
 export class ProjectReportGenerator {
-  private genAI: GoogleGenerativeAI;
-  private model: any;
+  private openai: OpenAI;
   private stanceReportGenerator: StanceReportGenerator;
 
   constructor(apiKey: string) {
-    this.genAI = new GoogleGenerativeAI(apiKey);
-    this.model = this.genAI.getGenerativeModel({ model: 'gemini-2.0-flash' });
+    this.openai = new OpenAI({
+      baseURL: 'https://openrouter.ai/api/v1',
+      apiKey: apiKey,
+    });
     this.stanceReportGenerator = new StanceReportGenerator(apiKey);
   }
 
@@ -89,8 +90,18 @@ export class ProjectReportGenerator {
         questionAnalyses,
         customPrompt
       );
-      const result = await this.model.generateContent(prompt);
-      let overallAnalysis = result.response.text();
+      
+      const completion = await this.openai.chat.completions.create({
+        model: 'google/gemini-2.0-flash-001',
+        messages: [
+          {
+            role: 'user',
+            content: prompt,
+          },
+        ],
+      });
+      
+      let overallAnalysis = completion.choices[0].message.content || '';
 
       // Remove triple quotes or backticks if they exist
       overallAnalysis = overallAnalysis.replace(/^"""|"""$|^```|```$/g, '').trim();

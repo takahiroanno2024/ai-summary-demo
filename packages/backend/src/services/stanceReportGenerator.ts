@@ -1,4 +1,4 @@
-import { GoogleGenerativeAI } from '@google/generative-ai';
+import OpenAI from 'openai';
 import { IComment } from '../models/comment';
 import { StanceAnalysis, IStanceAnalysis } from '../models/stanceAnalysis';
 import mongoose from 'mongoose';
@@ -16,12 +16,13 @@ export interface StanceAnalysisResult {
 }
 
 export class StanceReportGenerator {
-  private genAI: GoogleGenerativeAI;
-  private model: any;
+  private openai: OpenAI;
 
   constructor(apiKey: string) {
-    this.genAI = new GoogleGenerativeAI(apiKey);
-    this.model = this.genAI.getGenerativeModel({ model: 'gemini-2.0-flash' });
+    this.openai = new OpenAI({
+      baseURL: 'https://openrouter.ai/api/v1',
+      apiKey: apiKey,
+    });
   }
 
   async getAnalysis(
@@ -130,22 +131,24 @@ export class StanceReportGenerator {
         throw new Error(`Prompt generation failed: ${error?.message || 'Unknown error'}`);
       }
 
-      let geminiResult;
-      try {
-        geminiResult = await this.model.generateContent(prompt);
-        console.log('Raw Gemini response:', geminiResult.response);
-      } catch (error: any) {
-        console.error('Gemini API error:', error);
-        throw new Error(`Gemini API error: ${error?.message || 'Unknown error'}`);
-      }
-
       let analysis;
       try {
-        analysis = geminiResult.response.text();
+        const completion = await this.openai.chat.completions.create({
+          model: 'google/gemini-2.0-flash-001',
+          messages: [
+            {
+              role: 'user',
+              content: prompt,
+            },
+          ],
+        });
+        
+        console.log('Raw OpenRouter response:', completion);
+        analysis = completion.choices[0].message.content || '';
         console.log('Parsed analysis:', analysis);
       } catch (error: any) {
-        console.error('Failed to parse Gemini response:', error);
-        throw new Error(`Response parsing failed: ${error?.message || 'Unknown error'}`);
+        console.error('OpenRouter API error:', error);
+        throw new Error(`OpenRouter API error: ${error?.message || 'Unknown error'}`);
       }
 
       // 分析結果をデータベースに保存
