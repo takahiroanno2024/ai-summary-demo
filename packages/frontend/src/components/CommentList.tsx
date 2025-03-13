@@ -124,7 +124,20 @@ export const CommentList = ({ comments, project }: CommentListProps) => {
           <div className="flex flex-col">
             <div className="flex items-center justify-between mb-2">
               <span className="text-sm text-gray-500">
-                {new Date(comment.createdAt).toLocaleDateString()}
+                {(() => {
+                  // 確実に日付オブジェクトに変換
+                  const date = new Date(comment.createdAt);
+                  // 日本時間で年月日を取得
+                  const year = date.getFullYear();
+                  const month = String(date.getMonth() + 1).padStart(2, "0");
+                  const day = String(date.getDate()).padStart(2, "0");
+                  // 日本時間で時刻を取得
+                  const hours = String(date.getHours()).padStart(2, "0");
+                  const minutes = String(date.getMinutes()).padStart(2, "0");
+
+                  // 日本形式で返す: yyyy/mm/dd hh:mm
+                  return `${year}/${month}/${day} ${hours}:${minutes}`;
+                })()}
               </span>
               {comment.sourceType && (
                 <div className="flex items-center gap-2">
