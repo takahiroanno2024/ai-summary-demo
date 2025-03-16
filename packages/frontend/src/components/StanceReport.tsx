@@ -6,7 +6,7 @@ import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import { analyzeStances } from '../config/api';
 import { convertBoldBrackets } from '../utils/markdownHelper';
-import { StanceGraphComponent } from './StanceGraphComponent';
+import { StanceGraphComponent, CHART_COLORS } from './StanceGraphComponent';
 
 interface StanceAnalyticsProps {
   comments: Comment[];
@@ -205,9 +205,14 @@ export const StanceReport = ({ comments, project, initialQuestionId }: StanceAna
                           <div
                             key={comment._id}
                             className={`
-                              bg-white px-3 py-2 text-sm border-l-4 border-blue-400
+                              bg-white px-3 py-2 text-sm border-l-4
                               ${!expandedStances[stanceId] && index === 2 ? 'relative' : ''}
                             `}
+                            style={{
+                              borderLeftColor: stanceId !== 'other' && selectedQuestion.stances.findIndex(s => s.id === stanceId) >= 0
+                                ? CHART_COLORS[selectedQuestion.stances.findIndex(s => s.id === stanceId) % CHART_COLORS.length]
+                                : '#3B82F6' // blue-400の色コード（デフォルト）
+                            }}
                           >
                             <div className="flex items-center justify-between">
                               <div className="flex-1">
