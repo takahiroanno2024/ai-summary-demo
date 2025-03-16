@@ -130,7 +130,7 @@ export const ProjectPage = () => {
 
       {/* タブナビゲーション */}
       <div className="border-b border-gray-200 mb-8">
-        <nav className="-mb-px flex space-x-8" aria-label="Tabs">
+        <nav className="-mb-px flex space-x-8  overflow-x-auto flex-nowrap" aria-label="Tabs">
           <Link
             to={`/projects/${projectId}/overall`}
             className={`
