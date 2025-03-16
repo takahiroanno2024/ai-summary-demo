@@ -16,7 +16,6 @@
 - コントリビュートにあたっては、本リポジトリのrootディレクトリにあるCLA.md（コントリビューターライセンス）へ同意が必要です。
     - 同意する手順は、Pull Requestのテンプレートに記載があります
 
-
 # 論点整理モジュール
 
 ## セットアップと実行方法
@@ -26,7 +25,6 @@
 各ディレクトリの `.env.example` ファイルを `.env` にコピーして必要な環境変数を設定します：
 
 
-lll
 ```bash
 # ルートディレクトリ
 cp .env.example .env
@@ -38,6 +36,8 @@ cp packages/backend/.env.example packages/backend/.env
 cp packages/frontend/.env.example packages/frontend/.env
 ```
 
+ADMIN_API_KEYは、あなたの環境における管理者認証のためのAPIキーです。好きな文字列を設定してください。
+
 ### 2. アプリケーションの起動
 
 以下のコマンドでアプリケーションを起動します：
@@ -48,6 +48,36 @@ docker-compose up --build
 
 - フロントエンド: http://localhost:3000
 - バックエンド: http://localhost:3001
+
+### 3. 試し方
+
+アプリケーションをセットアップした後、以下の手順でCSVデータをアップロードし、論点整理を試すことができます：
+
+#### 管理者モードへのアクセス
+
+1. ブラウザで http://localhost:3000/adminauth にアクセスします
+2. `.env`ファイルに設定した`ADMIN_API_KEY`を入力して認証ボタンをクリックします
+
+#### CSVデータのアップロード
+
+1. 認証後、http://localhost:3000/csv-upload にアクセスします
+2. 以下の情報を入力してプロジェクトを作成します：
+   - プロジェクト名：分析対象のプロジェクト名
+   - プロジェクトの説明：プロジェクトの概要
+   - 抽出トピック：分析したい主題（例：「再生可能エネルギー政策について」）
+   - プロジェクトの背景情報：分析の文脈となる情報
+3. 「プロジェクトを作成」ボタンをクリックします
+4. CSVファイルを選択します（必須列：content, sourceType, sourceUrl）
+5. 「アップロード開始」ボタンをクリックします
+6. アップロード完了後、「処理開始」ボタンをクリックして論点生成と立場のラベル付けを行います
+7. 処理完了後、「プロジェクトページへ」ボタンをクリックして結果を確認します
+
+#### 例
+
+例えば、この[YouTube動画](https://www.youtube.com/watch?v=CHCx9AUpE4U)に対するコメントを収集して作成したCSVが[こちら](https://drive.google.com/file/d/1Rs-rHrnmwoHngtUYC1hB4cw0QXVfwpyP/view?usp=sharing)になります。このCSVファイルをアップロードすると、以下のような結果が得られます。
+[![Image from Gyazo](https://i.gyazo.com/1c8a7aee03de9cd1a7f7f54d621c91e2.png)](https://gyazo.com/1c8a7aee03de9cd1a7f7f54d621c91e2)
+[![Image from Gyazo](https://i.gyazo.com/1c8a7aee03de9cd1a7f7f54d621c91e2.png)](https://gyazo.com/1c8a7aee03de9cd1a7f7f54d621c91e2)
+
 
 ## プロジェクト構成
 
