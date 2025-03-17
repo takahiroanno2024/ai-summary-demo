@@ -15,6 +15,12 @@ services:
     volumes:
       - mongodb_data:/data/db
       - ./mongo-init.js:/docker-entrypoint-initdb.d/mongo-init.js:ro
+    healthcheck:
+      test: echo 'db.runCommand("ping").ok' | mongosh mongodb://localhost:27017 --quiet
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: always
 
   mongo-express:
     image: mongo-express:latest
@@ -27,7 +33,9 @@ services:
       - ME_CONFIG_BASICAUTH_USERNAME=${MONGO_EXPRESS_USERNAME}
       - ME_CONFIG_BASICAUTH_PASSWORD=${MONGO_EXPRESS_PASSWORD}
     depends_on:
-      - mongodb
+      mongodb:
+        condition: service_healthy
+    restart: always
 
   backend:
     build:
@@ -42,7 +50,9 @@ services:
       - OPENROUTER_API_KEY=${OPENROUTER_API_KEY}
       - PORT=3001
     depends_on:
-      - mongodb
+      mongodb:
+        condition: service_healthy
+    restart: always
 
   frontend:
     build:
@@ -52,6 +62,7 @@ services:
       - "3000:3000"
     depends_on:
       - backend
+    restart: always
 
   chat-bot:
     build:
@@ -66,6 +77,7 @@ services:
       - ADMIN_API_KEY=${ADMIN_API_KEY}
     depends_on:
       - backend
+    restart: always
 
 volumes:
   mongodb_data:
