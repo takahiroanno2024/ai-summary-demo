@@ -1,0 +1,19 @@
+FROM node:18-alpine
+
+WORKDIR /app
+
+# package.json のみコピー
+COPY package.json ./
+
+# 開発用にすべての依存関係をインストール
+RUN npm install
+
+# ソースコードをコンテナにコピー
+COPY . .
+COPY /src /src
+
+# ポート開放
+EXPOSE 3030
+
+# 開発環境では TypeScript のホットリロードを有効に
+CMD ["npm", "run", "dev"]
