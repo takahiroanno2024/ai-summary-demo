@@ -11,6 +11,9 @@ const server = createServer(app);
 const wss = new WebSocketServer({ noServer: true });
 const sessionManager = new SessionManager();
 
+// JSON パーサーミドルウェアを追加
+app.use(express.json());
+
 // OpenRouter APIの初期化
 const OPENROUTER_API_KEY = process.env.OPENROUTER_API_KEY;
 if (!OPENROUTER_API_KEY) {
@@ -394,6 +397,45 @@ async function handleConnection(ws: WebSocket, sessionId: string, projectId: str
     console.error(`WebSocket error in session ${sessionId}:`, error);
   });
 }
+
+// REST API エンドポイント: 過去ログと新規コメントを受け取って回答を返す
+interface ChatRequest {
+  projectId: string;
+  newComment: string;
+  pastLogs: ChatMessage[];
+}
+
+app.post('/api/chat', async (req, res) => {
+  try {
+    const { projectId, newComment, pastLogs } = req.body as ChatRequest;
+    
+    if (!projectId || !newComment) {
+      return res.status(400).json({ error: 'projectId and newComment are required' });
+    }
+    
+    // プロジェクトの論点を取得
+    const questions = await getProjectQuestions(projectId);
+    
+    // 応答を生成
+    const response = await generateResponse(
+      newComment,
+      projectId,
+      questions,
+      pastLogs || []
+    );
+    
+    return res.json({
+      response,
+      timestamp: new Date()
+    });
+  } catch (error) {
+    console.error('Error in chat API:', error);
+    return res.status(500).json({
+      error: 'Internal server error',
+      message: error instanceof Error ? error.message : 'Unknown error'
+    });
+  }
+});
 
 const PORT = process.env.PORT || 3030;
 server.listen(PORT, () => {
