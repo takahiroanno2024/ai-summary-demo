@@ -73,11 +73,11 @@ export class ProjectVisualReportGenerator {
 ### 1. カラースキーム
 
   <palette>
-  <color name='ファッション-1' rgb='593C47' r='89' g='59' b='70' />
-  <color name='ファッション-2' rgb='F2E63D' r='242' g='230' b='60' />
-  <color name='ファッション-3' rgb='F2C53D' r='242' g='196' b='60' />
-  <color name='ファッション-4' rgb='F25C05' r='242' g='91' b='4' />
-  <color name='ファッション-5' rgb='F24405' r='242' g='68' b='4' />
+  <color name='青-1' rgb='0A2463' r='10' g='36' b='99' />
+  <color name='青-2' rgb='1E5EF3' r='30' g='94' b='243' />
+  <color name='青-3' rgb='00A8E8' r='0' g='168' b='232' />
+  <color name='青-4' rgb='38B6FF' r='56' g='182' b='255' />
+  <color name='青-5' rgb='8CDBFF' r='140' g='219' b='255' />
   </palette>
 
 ### 2. グラフィックレコーディング要素
@@ -118,9 +118,10 @@ export class ProjectVisualReportGenerator {
 - 読み手が自然に視線を移動できる配置
 - 情報の階層と関連性を視覚的に明確化
 - 視覚的な記憶に残るデザイン
+- 遠くからでも見やすいデザイン
 - フッターに出典情報を明記
 - 複雑すぎる構造はCSSが壊れる可能性があるため避ける
-- 単に原文のキーワードだけ書いても意味が分からないため、誰にでも伝わるように表現を書き換えて工夫する
+- 単に原文のキーワードだけ書いても意味が分からないため、誰にでも伝わるような分かりやすい表現に書き換えて説明する
 
 ## 変換する文章/記事
 ${markdownReport.overallAnalysis}
