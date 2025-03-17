@@ -104,7 +104,7 @@ export class ProjectVisualReportGenerator {
   - カード型コンポーネント：白背景、角丸16px、微細シャドウ
   - セクション間の余白を広めに取り、階層構造を明確に
   - 適切にグラスモーフィズムを活用
-  - コンテンツの最大幅は1200pxで中央揃え
+  - コンテンツの最大幅は600pxで中央揃え
   - 余白を十分に取り、読みやすさを重視
 
 ## グラフィックレコーディング表現技法
@@ -119,6 +119,7 @@ export class ProjectVisualReportGenerator {
 - 情報の階層と関連性を視覚的に明確化
 - 視覚的な記憶に残るデザイン
 - フッターに出典情報を明記
+- 複雑すぎる構造はCSSが壊れる可能性があるため避ける
 ## 変換する文章/記事
 ${markdownReport.overallAnalysis}
 ---
