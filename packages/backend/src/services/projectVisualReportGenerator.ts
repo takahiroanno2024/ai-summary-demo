@@ -90,9 +90,9 @@ export class ProjectVisualReportGenerator {
 - 絵文字やアイコンを効果的に配置（✏️📌📝🔍📊など）
 ### 3. タイポグラフィ
   - タイトル：48px、グラデーション効果、太字
-  - サブタイトル：24px、#475569
-  - セクション見出し：28px、#1e40af、アイコン付き
-  - 本文：20px、#334155、行間1.6
+  - サブタイトル：28px、#475569
+  - セクション見出し：32px、#1e40af、アイコン付き
+  - 本文：24px、#334155、行間1.6
   - フォント指定：
     <style>
     @import url('https://fonts.googleapis.com/css2?family=Zen+Maru+Gothic&display=swap');
