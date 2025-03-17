@@ -120,6 +120,8 @@ export class ProjectVisualReportGenerator {
 - 視覚的な記憶に残るデザイン
 - フッターに出典情報を明記
 - 複雑すぎる構造はCSSが壊れる可能性があるため避ける
+- 単に原文のキーワードだけ書いても意味が分からないため、誰にでも伝わるように表現を書き換えて工夫する
+
 ## 変換する文章/記事
 ${markdownReport.overallAnalysis}
 ---
