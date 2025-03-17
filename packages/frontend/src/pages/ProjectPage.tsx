@@ -261,7 +261,7 @@ export const ProjectPage = () => {
             <iframe
               src={`/embed/projects/${projectId}/visual`}
               className="w-full border-0"
-              style={{ height: '600px' }}
+              style={{ height: '1200px' }}
               title="プロジェクトビジュアル分析"
             />
           </div>
