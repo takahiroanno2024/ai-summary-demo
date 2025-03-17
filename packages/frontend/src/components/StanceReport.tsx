@@ -144,7 +144,7 @@ export const StanceReport = ({ comments, project, initialQuestionId }: StanceAna
     <div className="space-y-6">
       {/* 論点選択タブ */}
       <div className="border-b border-gray-200">
-        <nav className="-mb-px flex space-x-4" aria-label="Tabs">
+        <nav className="-mb-px flex space-x-4 overflow-x-auto flex-nowrap" aria-label="Tabs">
           {project.questions.map((question, index) => (
             <button
               key={question.id}
