@@ -57,10 +57,10 @@ export class StanceAnalyzer {
     const prompt = stancePrompts.stanceAnalysis(questionText, stanceOptions, context, customPrompt).replace('{content}', comment);
     console.log('Generated Prompt:', prompt);
     
-    const response = await openRouterService.chat(
-      prompt,
-      'google/gemini-2.0-flash-001',
-    );
+    const response = await openRouterService.chat({
+      model: 'google/gemini-2.0-flash-001',
+      messages: [{ role: 'user', content: prompt }],
+    });
     
     if (!response) {
       console.error('Analysis generation failed');
