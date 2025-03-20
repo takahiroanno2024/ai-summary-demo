@@ -1,4 +1,4 @@
-import mongoose from 'mongoose';
+import mongoose from "mongoose";
 
 export interface IStanceAnalysis {
   projectId: mongoose.Types.ObjectId;
@@ -17,7 +17,7 @@ export interface IStanceAnalysis {
 const stanceAnalysisSchema = new mongoose.Schema<IStanceAnalysis>({
   projectId: {
     type: mongoose.Schema.Types.ObjectId,
-    ref: 'Project',
+    ref: "Project",
     required: true,
   },
   questionId: {
@@ -49,4 +49,7 @@ const stanceAnalysisSchema = new mongoose.Schema<IStanceAnalysis>({
 // プロジェクトIDと質問IDの組み合わせでユニークにする
 stanceAnalysisSchema.index({ projectId: 1, questionId: 1 }, { unique: true });
 
-export const StanceAnalysis = mongoose.model<IStanceAnalysis>('StanceAnalysis', stanceAnalysisSchema);
+export const StanceAnalysis = mongoose.model<IStanceAnalysis>(
+  "StanceAnalysis",
+  stanceAnalysisSchema,
+);

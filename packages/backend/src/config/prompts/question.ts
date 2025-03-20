@@ -1,9 +1,9 @@
-import { QuestionPrompts } from './types';
-import { PromptTemplate } from '../../utils/promptTemplate';
+import { PromptTemplate } from "../../utils/promptTemplate";
+import type { QuestionPrompts } from "./types";
 
 export const questionPrompts: QuestionPrompts = {
   questionGeneration: (comments: string[]) =>
-    PromptTemplate.generate('question-generation', {
-      comments: comments.join('\n')
-    })
+    PromptTemplate.generate("question-generation", {
+      comments: comments.join("\n"),
+    }),
 };

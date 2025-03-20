@@ -1,10 +1,13 @@
-import OpenAI from 'openai';
-import mongoose from 'mongoose';
-import { IProject } from '../models/project';
-import { IComment } from '../models/comment';
-import { ProjectReportGenerator } from './projectReportGenerator';
-import { ProjectVisualAnalysis, IProjectVisualAnalysis } from '../models/projectVisualAnalysis';
-import { reportPrompts } from '../config/prompts';
+import mongoose from "mongoose";
+import OpenAI from "openai";
+import { reportPrompts } from "../config/prompts";
+import type { IComment } from "../models/comment";
+import type { IProject } from "../models/project";
+import {
+  type IProjectVisualAnalysis,
+  ProjectVisualAnalysis,
+} from "../models/projectVisualAnalysis";
+import { ProjectReportGenerator } from "./projectReportGenerator";
 
 export interface ProjectVisualAnalysisResult {
   projectName: string;
@@ -17,50 +20,51 @@ export class ProjectVisualReportGenerator {
 
   constructor(apiKey: string) {
     this.openai = new OpenAI({
-      baseURL: 'https://openrouter.ai/api/v1',
+      baseURL: "https://openrouter.ai/api/v1",
       apiKey: apiKey,
     });
     this.projectReportGenerator = new ProjectReportGenerator(apiKey);
   }
 
-  async getAnalysis(
-    projectId: string
-  ): Promise<IProjectVisualAnalysis | null> {
+  async getAnalysis(projectId: string): Promise<IProjectVisualAnalysis | null> {
     return ProjectVisualAnalysis.findOne({
-      projectId: new mongoose.Types.ObjectId(projectId)
+      projectId: new mongoose.Types.ObjectId(projectId),
     });
   }
 
   async generateProjectVisualReport(
     project: IProject & { _id: mongoose.Types.ObjectId },
     comments: IComment[],
-    forceRegenerate: boolean = false,
-    customPrompt?: string
+    forceRegenerate = false,
+    customPrompt?: string,
   ): Promise<ProjectVisualAnalysisResult> {
     try {
       // 強制再生成でない場合のみ既存の分析結果を確認
-      console.log('Checking for existing visual analysis...');
+      console.log("Checking for existing visual analysis...");
       const existingAnalysis = await this.getAnalysis(project._id.toString());
-      console.log('Existing visual analysis:', existingAnalysis);
+      console.log("Existing visual analysis:", existingAnalysis);
       if (!forceRegenerate && existingAnalysis) {
-        console.log('Using existing visual analysis');
+        console.log("Using existing visual analysis");
         return {
           projectName: existingAnalysis.projectName,
-          overallAnalysis: existingAnalysis.overallAnalysis
+          overallAnalysis: existingAnalysis.overallAnalysis,
         };
       }
-      console.log('No existing visual analysis found or force regenerate is true');
+      console.log(
+        "No existing visual analysis found or force regenerate is true",
+      );
 
       // プロジェクトレポートジェネレーターからマークダウンレポートを取得
-      console.log('Getting markdown report from project report generator...');
-      const markdownReport = await this.projectReportGenerator.generateProjectReport(
-        project,
-        comments,
-        forceRegenerate,
-        customPrompt
-      );
-      
-      console.log('Markdown report generated successfully');
+      console.log("Getting markdown report from project report generator...");
+      const markdownReport =
+        await this.projectReportGenerator.generateProjectReport(
+          project,
+          comments,
+          forceRegenerate,
+          customPrompt,
+        );
+
+      console.log("Markdown report generated successfully");
 
       // マークダウンレポートをHTML+CSSに変換するための指示
       const visualPrompt = `
@@ -129,19 +133,19 @@ ${markdownReport.overallAnalysis}
 レスポンスは完全なHTML+CSSコードのみを返してください。`;
 
       const completion = await this.openai.chat.completions.create({
-        model: 'anthropic/claude-3.7-sonnet',
+        model: "anthropic/claude-3.7-sonnet",
         messages: [
           {
-            role: 'user',
+            role: "user",
             content: visualPrompt,
           },
         ],
       });
-      
-      let overallAnalysis = completion.choices[0].message.content || '';
+
+      let overallAnalysis = completion.choices[0].message.content || "";
 
       // Remove HTML tags wrapper if they exist
-      overallAnalysis = overallAnalysis.replace(/^```html|```$/g, '').trim();
+      overallAnalysis = overallAnalysis.replace(/^```html|```$/g, "").trim();
 
       // 分析結果をデータベースに保存 (既存のドキュメントがあれば更新、なければ新規作成)
       await ProjectVisualAnalysis.findOneAndUpdate(
@@ -150,17 +154,17 @@ ${markdownReport.overallAnalysis}
           projectId: project._id,
           projectName: project.name,
           overallAnalysis,
-          updatedAt: new Date()
+          updatedAt: new Date(),
         },
-        { upsert: true, new: true }
+        { upsert: true, new: true },
       );
 
       return {
         projectName: project.name,
-        overallAnalysis
+        overallAnalysis,
       };
     } catch (error) {
-      console.error('Project visual analysis generation failed:', error);
+      console.error("Project visual analysis generation failed:", error);
       throw error;
     }
   }

@@ -1,6 +1,6 @@
-import mongoose from 'mongoose';
+import mongoose from "mongoose";
 
-export type CommentSourceType = 'youtube' | 'x' | 'form' | 'other';
+export type CommentSourceType = "youtube" | "x" | "form" | "other";
 
 export interface ICommentStance {
   questionId: string;
@@ -43,7 +43,7 @@ const commentSchema = new mongoose.Schema<IComment>({
   },
   projectId: {
     type: mongoose.Schema.Types.ObjectId,
-    ref: 'Project',
+    ref: "Project",
     required: true,
   },
   extractedContent: {
@@ -61,7 +61,7 @@ const commentSchema = new mongoose.Schema<IComment>({
   },
   sourceType: {
     type: String,
-    enum: ['youtube', 'x', 'form', 'other'],
+    enum: ["youtube", "x", "form", "other"],
     required: false,
   },
   sourceUrl: {
@@ -71,4 +71,4 @@ const commentSchema = new mongoose.Schema<IComment>({
   },
 });
 
-export const Comment = mongoose.model<IComment>('Comment', commentSchema);
+export const Comment = mongoose.model<IComment>("Comment", commentSchema);
