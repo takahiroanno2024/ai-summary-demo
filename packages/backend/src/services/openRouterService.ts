@@ -12,12 +12,53 @@ async function sleep(ms: number): Promise<void> {
 
 class OpenRouterService {
   private client: OpenAI;
+  private token: string;
+  private baseURL: string;
+  private lastAlertTimestamp: number | undefined = undefined;
 
-  constructor(options: { apiKey: string; baseURL?: string }) {
+  constructor(options: { apiKey: string }) {
+    this.token = options.apiKey;
+    this.baseURL = 'https://openrouter.ai/api/v1';
     this.client = new OpenAI({
-      apiKey: options.apiKey,
-      baseURL: options.baseURL,
+      apiKey: this.token,
+      baseURL: this.baseURL,
     });
+  }
+
+  async getRemainingCredits(): Promise<number | null> {
+    const response = await fetch(`${this.baseURL}/credits`, {
+      headers: {
+        'Authorization': `Bearer ${this.token}`
+      }
+    });
+    
+    if (!response.ok) {
+      console.error(`Failed to fetch credits: ${response.status} ${response.statusText}`);
+      return null;
+    }
+    
+    const json = await response.json();
+
+    return Number(json.data.total_credits) - Number(json.data.total_usage);
+  }
+
+  async checkRemainingCredits(): Promise<void> {
+    const remainingCredits = await this.getRemainingCredits();
+
+    // credits が取得できなくても chat は止めたくない
+    if (remainingCredits === null) {
+      return;
+    }
+
+    const remainingCreditsAlertThreshold = 100;
+    const minAlertInterval = 1000 * 60 * 60; // 1時間
+
+    if (this.lastAlertTimestamp &&
+        this.lastAlertTimestamp + minAlertInterval < Date.now() &&
+        remainingCredits < remainingCreditsAlertThreshold) {
+      console.log('Remaining credits:', remainingCredits);
+      this.lastAlertTimestamp = Date.now();
+    }
   }
 
   async chat(options: ChatCompletionCreateParams): Promise<string | null> {
@@ -45,6 +86,7 @@ class OpenRouterService {
 
   private async chat_internal(options: ChatCompletionCreateParams): Promise<string> {
     try {
+      await this.checkRemainingCredits();
       const response = await this.client.chat.completions.create(options);
       return (response as any).choices[0].message.content || '';
     } catch (error) {
@@ -54,7 +96,4 @@ class OpenRouterService {
   }
 }
 
-export const openRouterService = new OpenRouterService({
-  apiKey: OPENROUTER_API_KEY,
-  baseURL: 'https://openrouter.ai/api/v1',
-});
+export const openRouterService = new OpenRouterService({ apiKey: OPENROUTER_API_KEY });
