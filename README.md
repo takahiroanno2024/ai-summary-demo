@@ -36,6 +36,12 @@ cp packages/backend/.env.example packages/backend/.env
 cp packages/frontend/.env.example packages/frontend/.env
 ```
 
+このコードは
+```bash
+sh ./copy-env.sh
+```
+で実行できます。
+
 ADMIN_API_KEYは、あなたの環境における管理者認証のためのAPIキーです。好きな文字列を設定してください。
 
 ### 2. アプリケーションの起動
