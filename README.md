@@ -43,7 +43,7 @@ ADMIN_API_KEYは、あなたの環境における管理者認証のためのAPI�
 以下のコマンドでアプリケーションを起動します：
 
 ```bash
-docker-compose up --build
+docker compose up --watch
 ```
 
 - フロントエンド: http://localhost:3000
