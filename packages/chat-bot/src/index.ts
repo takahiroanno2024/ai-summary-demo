@@ -186,7 +186,7 @@ ${userMessage}
     // 整理された内容をバックエンドに送信
     const commentResponse = await backendApi.post<CommentResponse>(`/projects/${projectId}/comments`, {
       content: analysisResult.content,
-      sourceType: 'other',
+      sourceType: 'chat',
       sourceUrl: null
     });
 
