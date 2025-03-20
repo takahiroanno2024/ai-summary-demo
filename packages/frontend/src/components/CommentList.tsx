@@ -70,6 +70,8 @@ export const CommentList = ({ comments, project }: CommentListProps) => {
         return 'bg-gray-900 text-white';
       case 'form':
         return 'bg-blue-100 text-blue-800';
+      case 'chat':
+        return 'bg-green-100 text-green-800';
       default:
         return 'bg-gray-100 text-gray-800';
     }
@@ -84,6 +86,8 @@ export const CommentList = ({ comments, project }: CommentListProps) => {
         return 'X (Twitter)';
       case 'form':
         return 'フォーム';
+      case 'chat':
+        return 'チャット';
       default:
         return 'その他';
     }
