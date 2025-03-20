@@ -1,5 +1,5 @@
-import OpenAI from 'openai';
 import { questionPrompts } from '../config/prompts';
+import { openRouterService } from './openRouterService';
 
 export interface GeneratedQuestion {
     text: string;
@@ -7,16 +7,8 @@ export interface GeneratedQuestion {
 }
 
 export class QuestionGenerator {
-    private openai: OpenAI;
     private lastRequestTime: number = 0;
     private readonly MIN_DELAY_MS: number = 1000; // 1秒の最小遅延
-
-    constructor(apiKey: string) {
-        this.openai = new OpenAI({
-            baseURL: 'https://openrouter.ai/api/v1',
-            apiKey: apiKey,
-        });
-    }
 
     private async delay(ms: number): Promise<void> {
         return new Promise(resolve => setTimeout(resolve, ms));
@@ -53,17 +45,14 @@ export class QuestionGenerator {
             await this.enforceRateLimit();
             console.log('Sending prompt to LLM...');
             
-            const completion = await this.openai.chat.completions.create({
+            const response = await openRouterService.chat({
                 model: 'google/gemini-2.0-flash-001',
-                messages: [
-                    {
-                        role: 'user',
-                        content: prompt,
-                    },
-                ],
+                messages: [{ role: 'user', content: prompt }],
             });
-            
-            const response = completion.choices[0].message.content || '';
+
+            if (!response) {
+                throw new Error('Failed to generate questions');
+            }
             console.log('LLM Response:', response);
             
             return this.parseResponse(response);

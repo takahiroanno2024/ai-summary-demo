@@ -1,8 +1,8 @@
-import OpenAI from 'openai';
 import { IComment } from '../models/comment';
 import { StanceAnalysis, IStanceAnalysis } from '../models/stanceAnalysis';
 import mongoose from 'mongoose';
 import { reportPrompts } from '../config/prompts';
+import { openRouterService } from './openRouterService';
 
 export interface StanceAnalysisResult {
   question: string;
@@ -16,15 +16,6 @@ export interface StanceAnalysisResult {
 }
 
 export class StanceReportGenerator {
-  private openai: OpenAI;
-
-  constructor(apiKey: string) {
-    this.openai = new OpenAI({
-      baseURL: 'https://openrouter.ai/api/v1',
-      apiKey: apiKey,
-    });
-  }
-
   async getAnalysis(
     projectId: string,
     questionId: string
@@ -131,24 +122,13 @@ export class StanceReportGenerator {
         throw new Error(`Prompt generation failed: ${error?.message || 'Unknown error'}`);
       }
 
-      let analysis;
-      try {
-        const completion = await this.openai.chat.completions.create({
-          model: 'google/gemini-2.0-flash-001',
-          messages: [
-            {
-              role: 'user',
-              content: prompt,
-            },
-          ],
-        });
-        
-        console.log('Raw OpenRouter response:', completion);
-        analysis = completion.choices[0].message.content || '';
-        console.log('Parsed analysis:', analysis);
-      } catch (error: any) {
-        console.error('OpenRouter API error:', error);
-        throw new Error(`OpenRouter API error: ${error?.message || 'Unknown error'}`);
+      const analysis = await openRouterService.chat({
+        model: 'google/gemini-2.0-flash-001',
+        messages: [{ role: 'user', content: prompt }],
+      });
+
+      if (!analysis) {
+        throw new Error('Analysis generation failed in openRouterService');
       }
 
       // 分析結果をデータベースに保存

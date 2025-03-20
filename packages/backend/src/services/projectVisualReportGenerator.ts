@@ -1,10 +1,10 @@
-import OpenAI from 'openai';
 import mongoose from 'mongoose';
 import { IProject } from '../models/project';
 import { IComment } from '../models/comment';
 import { ProjectReportGenerator } from './projectReportGenerator';
 import { ProjectVisualAnalysis, IProjectVisualAnalysis } from '../models/projectVisualAnalysis';
 import { reportPrompts } from '../config/prompts';
+import { openRouterService } from './openRouterService';
 
 export interface ProjectVisualAnalysisResult {
   projectName: string;
@@ -12,15 +12,10 @@ export interface ProjectVisualAnalysisResult {
 }
 
 export class ProjectVisualReportGenerator {
-  private openai: OpenAI;
   private projectReportGenerator: ProjectReportGenerator;
 
-  constructor(apiKey: string) {
-    this.openai = new OpenAI({
-      baseURL: 'https://openrouter.ai/api/v1',
-      apiKey: apiKey,
-    });
-    this.projectReportGenerator = new ProjectReportGenerator(apiKey);
+  constructor() {
+    this.projectReportGenerator = new ProjectReportGenerator();
   }
 
   async getAnalysis(
@@ -124,20 +119,17 @@ ${markdownReport.overallAnalysis}
 ---
 レスポンスは完全なHTML+CSSコードのみを返してください。`;
 
-      const completion = await this.openai.chat.completions.create({
+      const completion = await openRouterService.chat({
         model: 'anthropic/claude-3.7-sonnet',
-        messages: [
-          {
-            role: 'user',
-            content: visualPrompt,
-          },
-        ],
+        messages: [{ role: 'user', content: visualPrompt }],
       });
       
-      let overallAnalysis = completion.choices[0].message.content || '';
+      if (!completion) {
+        throw new Error('Failed to generate OpenRouter completion');
+      }
 
       // Remove HTML tags wrapper if they exist
-      overallAnalysis = overallAnalysis.replace(/^```html|```$/g, '').trim();
+      const overallAnalysis = completion.replace(/^```html|```$/g, '').trim();
 
       // 分析結果をデータベースに保存 (既存のドキュメントがあれば更新、なければ新規作成)
       await ProjectVisualAnalysis.findOneAndUpdate(

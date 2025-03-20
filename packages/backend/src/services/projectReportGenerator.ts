@@ -1,10 +1,10 @@
-import OpenAI from 'openai';
 import mongoose from 'mongoose';
 import { IProject } from '../models/project';
 import { IComment } from '../models/comment';
 import { StanceReportGenerator } from './stanceReportGenerator';
 import { ProjectAnalysis, IProjectAnalysis } from '../models/projectAnalysis';
 import { reportPrompts } from '../config/prompts';
+import { openRouterService } from './openRouterService';
 
 export interface ProjectAnalysisResult {
   projectName: string;
@@ -12,15 +12,10 @@ export interface ProjectAnalysisResult {
 }
 
 export class ProjectReportGenerator {
-  private openai: OpenAI;
   private stanceReportGenerator: StanceReportGenerator;
 
-  constructor(apiKey: string) {
-    this.openai = new OpenAI({
-      baseURL: 'https://openrouter.ai/api/v1',
-      apiKey: apiKey,
-    });
-    this.stanceReportGenerator = new StanceReportGenerator(apiKey);
+  constructor() {
+    this.stanceReportGenerator = new StanceReportGenerator();
   }
 
   async getAnalysis(
@@ -91,17 +86,18 @@ export class ProjectReportGenerator {
         customPrompt
       );
       
-      const completion = await this.openai.chat.completions.create({
-        model: 'google/gemini-2.0-flash-001',
-        messages: [
-          {
-            role: 'user',
-            content: prompt,
-          },
-        ],
-      });
+      const completion = await openRouterService.chat(
+        {
+          model: 'google/gemini-2.0-flash-001',
+          messages: [{ role: 'user', content: prompt }],
+        }
+      );
+
+      if (!completion) {
+        throw new Error('Failed to generate OpenRouter completion');
+      }
       
-      let overallAnalysis = completion.choices[0].message.content || '';
+      let overallAnalysis = completion;
 
       // Remove triple quotes or backticks if they exist
       overallAnalysis = overallAnalysis.replace(/^"""|"""$|^```|```$/g, '').trim();
