@@ -11,6 +11,9 @@ const server = createServer(app);
 const wss = new WebSocketServer({ noServer: true });
 const sessionManager = new SessionManager();
 
+// JSON パーサーミドルウェアを追加
+app.use(express.json());
+
 // OpenRouter APIの初期化
 const OPENROUTER_API_KEY = process.env.OPENROUTER_API_KEY;
 if (!OPENROUTER_API_KEY) {
@@ -266,10 +269,9 @@ ${contextualInfo ? contextualInfo : ''}
    - 分析レポートを参考に、ユーザーと異なる立場からの意見を提示
    - ユーザーと異なる立場の根拠や具体例を示しながら、建設的な議論を展開
 2. ユーザーの発言が論点から外れている場合：
-   - 最も関連性の高い論点に自然に誘導
+   - 最も関連性の高い論点に誘導
    - その論点が重要である理由や、議論する価値を説明
 3. 常に建設的で具体的な議論となるよう導く
-4. 一方的な主張を避け、ユーザーの意見を引き出すよう心がける
 
 回答の長さや温度感は、相手に完全に合わせて回答を生成してください。長さは最大でも2~3文.
 
@@ -394,6 +396,45 @@ async function handleConnection(ws: WebSocket, sessionId: string, projectId: str
     console.error(`WebSocket error in session ${sessionId}:`, error);
   });
 }
+
+// REST API エンドポイント: 過去ログと新規コメントを受け取って回答を返す
+interface ChatRequest {
+  projectId: string;
+  newComment: string;
+  pastLogs: ChatMessage[];
+}
+
+app.post('/api/chat', async (req, res) => {
+  try {
+    const { projectId, newComment, pastLogs } = req.body as ChatRequest;
+    
+    if (!projectId || !newComment) {
+      return res.status(400).json({ error: 'projectId and newComment are required' });
+    }
+    
+    // プロジェクトの論点を取得
+    const questions = await getProjectQuestions(projectId);
+    
+    // 応答を生成
+    const response = await generateResponse(
+      newComment,
+      projectId,
+      questions,
+      pastLogs || []
+    );
+    
+    return res.json({
+      response,
+      timestamp: new Date()
+    });
+  } catch (error) {
+    console.error('Error in chat API:', error);
+    return res.status(500).json({
+      error: 'Internal server error',
+      message: error instanceof Error ? error.message : 'Unknown error'
+    });
+  }
+});
 
 const PORT = process.env.PORT || 3030;
 server.listen(PORT, () => {

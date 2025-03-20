@@ -52,6 +52,14 @@ export function authMiddleware(req: Request, res: Response, next: NextFunction) 
         params: ['projectId']
       },
       conditions: (req) => req.query.forceRegenerate !== 'true'
+    },
+    {
+      method: 'GET',
+      pathPattern: {
+        pattern: '/projects/:projectId/visual-analysis',
+        params: ['projectId']
+      },
+      conditions: (req) => req.query.forceRegenerate !== 'true'
     }
   ];
 

@@ -7,7 +7,7 @@ import { ProjectQuestionsAndStances } from '../components/ProjectQuestionsAndSta
 import { CommentForm } from '../components/CommentForm';
 import { StanceReport } from '../components/StanceReport';
 import { ProjectReport } from '../components/ProjectReport';
-import { ProjectVisualReport } from '../components/ProjectVisualReport';
+// import { ProjectVisualReport } from '../components/ProjectVisualReport';
 import { QuestionGenerationButton } from '../components/QuestionGenerationButton';
 import { ChatComponent } from '../components/ChatComponent';
 import { getProject, getComments, addComment, generateQuestions } from '../config/api';
@@ -130,7 +130,7 @@ export const ProjectPage = () => {
 
       {/* タブナビゲーション */}
       <div className="border-b border-gray-200 mb-8">
-        <nav className="-mb-px flex space-x-8" aria-label="Tabs">
+        <nav className="-mb-px flex space-x-8  overflow-x-auto flex-nowrap" aria-label="Tabs">
           <Link
             to={`/projects/${projectId}/overall`}
             className={`
@@ -257,7 +257,14 @@ export const ProjectPage = () => {
         )}
 
         {activeTab === 'visual' && (
-          <ProjectVisualReport project={project} />
+          <div className="bg-white rounded-lg shadow-sm p-6">
+            <iframe
+              src={`/embed/projects/${projectId}/visual`}
+              className="w-full border-0"
+              style={{ height: '1200px' }}
+              title="プロジェクトビジュアル分析"
+            />
+          </div>
         )}
 
         {activeTab === 'chat' && (
