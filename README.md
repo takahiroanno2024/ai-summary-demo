@@ -82,7 +82,8 @@ docker compose up --watch
 
 ```tree
 .
-├── compose.yaml            # Docker構成ファイル
+├── compose.prod.yaml       # Docker構成ファイル
+├── compose.yaml            # 開発環境用Docker構成ファイル
 ├── packages/
     ├── frontend/           # Reactフロントエンド
     │   │── Dockerfile      # フロントエンドのビルド設定
