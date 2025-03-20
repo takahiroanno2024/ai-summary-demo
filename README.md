@@ -1,4 +1,5 @@
 # このプロジェクトについて
+
 - オンライン上の政策熟議PFを構築する「いどばた」PJのリポジトリです。
     - PJ全体の意義・意図は[こちらのスライド](https://docs.google.com/presentation/d/1etZjpfj9v59NW5REC4bOv4QwVq_ApZMFDMQZqPDHb8Q/edit#slide=id.g339b8863127_0_989)のP20からP50を参照ください。
 - 本PJは、以下に示す複数のモジュールで構築されています
@@ -24,7 +25,6 @@
 
 各ディレクトリの `.env.example` ファイルを `.env` にコピーして必要な環境変数を設定します：
 
-
 ```bash
 # ルートディレクトリ
 cp .env.example .env
@@ -46,8 +46,8 @@ ADMIN_API_KEYは、あなたの環境における管理者認証のためのAPI�
 docker compose up --watch
 ```
 
-- フロントエンド: http://localhost:3000
-- バックエンド: http://localhost:3001
+- フロントエンド: <http://localhost:3000>
+- バックエンド: <http://localhost:3001>
 
 ### 3. 試し方
 
@@ -55,12 +55,12 @@ docker compose up --watch
 
 #### 管理者モードへのアクセス
 
-1. ブラウザで http://localhost:3000/adminauth にアクセスします
+1. ブラウザで <http://localhost:3000/adminauth> にアクセスします
 2. `.env`ファイルに設定した`ADMIN_API_KEY`を入力して認証ボタンをクリックします
 
 #### CSVデータのアップロード
 
-1. 認証後、http://localhost:3000/csv-upload にアクセスします
+1. 認証後、<http://localhost:3000/csv-upload> にアクセスします
 2. 以下の情報を入力してプロジェクトを作成します：
    - プロジェクト名：分析対象のプロジェクト名
    - プロジェクトの説明：プロジェクトの概要
@@ -78,14 +78,16 @@ docker compose up --watch
 [![Image from Gyazo](https://i.gyazo.com/1c8a7aee03de9cd1a7f7f54d621c91e2.png)](https://gyazo.com/1c8a7aee03de9cd1a7f7f54d621c91e2)
 [![Image from Gyazo](https://i.gyazo.com/1c8a7aee03de9cd1a7f7f54d621c91e2.png)](https://gyazo.com/1c8a7aee03de9cd1a7f7f54d621c91e2)
 
-
 ## プロジェクト構成
 
-```
+```tree
 .
-├── docker-compose.yml      # Docker構成ファイル
+├── compose.yaml            # Docker構成ファイル
 ├── packages/
-    ├── frontend/          # Reactフロントエンド
-    │   └── Dockerfile     # フロントエンドのビルド設定
-    └── backend/           # Expressバックエンド
-        └── Dockerfile     # バックエンドのビルド設定
+    ├── frontend/           # Reactフロントエンド
+    │   │── Dockerfile      # フロントエンドのビルド設定
+    │   └── Dockerfile.dev  # フロントエンドの開発用ビルド設定
+    └── backend/            # Expressバックエンド
+        │── Dockerfile      # バックエンドのビルド設定
+        └── Dockerfile.dev  # バックエンドの開発用ビルド設定
+```
