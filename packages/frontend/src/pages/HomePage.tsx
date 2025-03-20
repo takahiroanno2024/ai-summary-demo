@@ -1,7 +1,7 @@
-import { Link } from 'react-router-dom';
+import { Link } from "react-router-dom";
 
 export const HomePage = () => {
-  const isAdmin = !!localStorage.getItem('adminKey');
+  const isAdmin = !!localStorage.getItem("adminKey");
 
   return (
     <div className="max-w-4xl mx-auto py-8 px-4">

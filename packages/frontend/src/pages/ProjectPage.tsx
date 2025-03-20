@@ -1,78 +1,108 @@
-import { useEffect, useState, useMemo } from 'react';
-import { useParams, useLocation, useNavigate, Link } from 'react-router-dom';
-import { Project } from '../types/project';
-import { Comment, CommentInput, CommentOptions } from '../types/comment';
-import { CommentList } from '../components/CommentList';
-import { ProjectQuestionsAndStances } from '../components/ProjectQuestionsAndStances';
-import { CommentForm } from '../components/CommentForm';
-import { StanceReport } from '../components/StanceReport';
-import { ProjectReport } from '../components/ProjectReport';
+import { useCallback, useEffect, useMemo, useState } from "react";
+import { Link, useLocation, useNavigate, useParams } from "react-router-dom";
+import { ChatComponent } from "../components/ChatComponent";
+import { CommentForm } from "../components/CommentForm";
+import { CommentList } from "../components/CommentList";
+import { ProjectQuestionsAndStances } from "../components/ProjectQuestionsAndStances";
+import { ProjectReport } from "../components/ProjectReport";
 // import { ProjectVisualReport } from '../components/ProjectVisualReport';
-import { QuestionGenerationButton } from '../components/QuestionGenerationButton';
-import { ChatComponent } from '../components/ChatComponent';
-import { getProject, getComments, addComment, generateQuestions } from '../config/api';
+import { QuestionGenerationButton } from "../components/QuestionGenerationButton";
+import { StanceReport } from "../components/StanceReport";
+import {
+  addComment,
+  generateQuestions,
+  getComments,
+  getProject,
+} from "../config/api";
+import type { Comment, CommentInput, CommentOptions } from "../types/comment";
+import type { Project } from "../types/project";
 
 export const ProjectPage = () => {
   const { projectId } = useParams<{ projectId: string }>();
   const [project, setProject] = useState<Project | null>(null);
   const [comments, setComments] = useState<Comment[]>([]);
-  const [error, setError] = useState<string>('');
+  const [error, setError] = useState<string>("");
   const [isLoading, setIsLoading] = useState(true);
-  const [isAdmin, setIsAdmin] = useState(() => !!localStorage.getItem('adminKey'));
+  const [isAdmin, setIsAdmin] = useState(
+    () => !!localStorage.getItem("adminKey"),
+  );
   const location = useLocation();
   const navigate = useNavigate();
-  
+
   const searchParams = new URLSearchParams(location.search);
-  const questionId = searchParams.get('question');
+  const questionId = searchParams.get("question");
 
   const activeTab = useMemo(() => {
-    const path = location.pathname.split('/').pop();
-    if (path === 'comments' || path === 'analytics' || path === 'overall' || path === 'chat' || path === 'visual') {
+    const path = location.pathname.split("/").pop();
+    if (
+      path === "comments" ||
+      path === "analytics" ||
+      path === "overall" ||
+      path === "chat" ||
+      path === "visual"
+    ) {
       return path;
     }
-    return 'overall';
-  }, [location.pathname]) as 'comments' | 'analytics' | 'overall' | 'chat' | 'visual';
+    return "overall";
+  }, [location.pathname]) as
+    | "comments"
+    | "analytics"
+    | "overall"
+    | "chat"
+    | "visual";
 
   // 初期リダイレクト
   useEffect(() => {
     if (location.pathname === `/projects/${projectId}`) {
       if (questionId) {
         navigate(`/projects/${projectId}/analytics?question=${questionId}`);
-      } else if (location.search.includes('chat')) {
+      } else if (location.search.includes("chat")) {
         navigate(`/projects/${projectId}/chat`);
       } else {
         navigate(`/projects/${projectId}/overall`);
       }
     }
-  }, [projectId, location.pathname, navigate, questionId, isAdmin]);
+  }, [projectId, location.pathname, location.search, navigate, questionId]);
 
-  const fetchProject = async () => {
+  const fetchProject = useCallback(async () => {
     try {
-      const data = await getProject(projectId!);
+      if (!projectId) throw new Error("プロジェクトIDが指定されていません");
+      const data = await getProject(projectId);
       setProject(data);
     } catch (err) {
-      setError(err instanceof Error ? err.message : '予期せぬエラーが発生しました');
+      setError(
+        err instanceof Error ? err.message : "予期せぬエラーが発生しました",
+      );
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [projectId]);
 
-  const fetchComments = async () => {
+  const fetchComments = useCallback(async () => {
     try {
-      const data = await getComments(projectId!);
+      if (!projectId) throw new Error("プロジェクトIDが指定されていません");
+      const data = await getComments(projectId);
       setComments(data);
     } catch (err) {
-      setError(err instanceof Error ? err.message : '予期せぬエラーが発生しました');
+      setError(
+        err instanceof Error ? err.message : "予期せぬエラーが発生しました",
+      );
     }
-  };
+  }, [projectId]);
 
-  const handleSubmitComment = async (data: CommentInput, options: CommentOptions) => {
+  const handleSubmitComment = async (
+    data: CommentInput,
+    options: CommentOptions,
+  ) => {
     try {
-      await addComment(projectId!, data, options);
+      if (!projectId) throw new Error("プロジェクトIDが指定されていません");
+      await addComment(projectId, data, options);
       await fetchComments();
-      setError('');
+      setError("");
     } catch (err) {
-      setError(err instanceof Error ? err.message : '予期せぬエラーが発生しました');
+      setError(
+        err instanceof Error ? err.message : "予期せぬエラーが発生しました",
+      );
       throw err;
     }
   };
@@ -80,10 +110,10 @@ export const ProjectPage = () => {
   // AdminKeyの変更を監視
   useEffect(() => {
     const handleStorageChange = () => {
-      setIsAdmin(!!localStorage.getItem('adminKey'));
+      setIsAdmin(!!localStorage.getItem("adminKey"));
     };
-    window.addEventListener('storage', handleStorageChange);
-    return () => window.removeEventListener('storage', handleStorageChange);
+    window.addEventListener("storage", handleStorageChange);
+    return () => window.removeEventListener("storage", handleStorageChange);
   }, []);
 
   useEffect(() => {
@@ -92,20 +122,20 @@ export const ProjectPage = () => {
       fetchProject();
       fetchComments();
     }
-  }, [projectId]);
+  }, [projectId, fetchProject, fetchComments]);
 
   if (isLoading) {
     return (
       <div className="max-w-4xl mx-auto py-8 px-4">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500 mx-auto"></div>
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500 mx-auto" />
           <p className="mt-4 text-gray-500">読み込み中...</p>
         </div>
       </div>
     );
   }
 
-  if (!project) {
+  if (!projectId || !project) {
     return (
       <div className="max-w-4xl mx-auto py-8 px-4">
         <div className="text-center">
@@ -130,15 +160,18 @@ export const ProjectPage = () => {
 
       {/* タブナビゲーション */}
       <div className="border-b border-gray-200 mb-8">
-        <nav className="-mb-px flex space-x-8  overflow-x-auto flex-nowrap" aria-label="Tabs">
+        <nav
+          className="-mb-px flex space-x-8  overflow-x-auto flex-nowrap"
+          aria-label="Tabs"
+        >
           <Link
             to={`/projects/${projectId}/overall`}
             className={`
               whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm
               ${
-                activeTab === 'overall'
-                  ? 'border-blue-500 text-blue-600'
-                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                activeTab === "overall"
+                  ? "border-blue-500 text-blue-600"
+                  : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
               }
             `}
           >
@@ -149,9 +182,9 @@ export const ProjectPage = () => {
             className={`
               whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm
               ${
-                activeTab === 'visual'
-                  ? 'border-blue-500 text-blue-600'
-                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                activeTab === "visual"
+                  ? "border-blue-500 text-blue-600"
+                  : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
               }
             `}
           >
@@ -162,9 +195,9 @@ export const ProjectPage = () => {
             className={`
               whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm
               ${
-                activeTab === 'analytics'
-                  ? 'border-blue-500 text-blue-600'
-                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                activeTab === "analytics"
+                  ? "border-blue-500 text-blue-600"
+                  : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
               }
             `}
           >
@@ -175,9 +208,9 @@ export const ProjectPage = () => {
             className={`
               whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm
               ${
-                activeTab === 'comments'
-                  ? 'border-blue-500 text-blue-600'
-                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                activeTab === "comments"
+                  ? "border-blue-500 text-blue-600"
+                  : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
               }
             `}
           >
@@ -188,9 +221,9 @@ export const ProjectPage = () => {
             className={`
               whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm
               ${
-                activeTab === 'chat'
-                  ? 'border-blue-500 text-blue-600'
-                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                activeTab === "chat"
+                  ? "border-blue-500 text-blue-600"
+                  : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
               }
             `}
           >
@@ -200,7 +233,7 @@ export const ProjectPage = () => {
       </div>
 
       <div className="mt-8">
-        {activeTab === 'comments' && (
+        {activeTab === "comments" && (
           <>
             {isAdmin && (
               <div className="bg-white rounded-lg shadow-sm p-6 mb-8">
@@ -222,7 +255,7 @@ export const ProjectPage = () => {
           </>
         )}
 
-        {activeTab === 'analytics' && (
+        {activeTab === "analytics" && (
           <>
             {isAdmin && (
               <div className="mb-6">
@@ -231,12 +264,16 @@ export const ProjectPage = () => {
                   onGenerate={async () => {
                     setIsLoading(true);
                     try {
-                      const updatedProject = await generateQuestions(projectId!);
+                      const updatedProject = await generateQuestions(projectId);
                       setProject(updatedProject);
                       await fetchComments();
-                      setError('');
+                      setError("");
                     } catch (err) {
-                      setError(err instanceof Error ? err.message : '論点の生成に失敗しました');
+                      setError(
+                        err instanceof Error
+                          ? err.message
+                          : "論点の生成に失敗しました",
+                      );
                     } finally {
                       setIsLoading(false);
                     }
@@ -252,27 +289,25 @@ export const ProjectPage = () => {
           </>
         )}
 
-        {activeTab === 'overall' && (
-          <ProjectReport project={project} />
-        )}
+        {activeTab === "overall" && <ProjectReport project={project} />}
 
-        {activeTab === 'visual' && (
+        {activeTab === "visual" && (
           <div className="bg-white rounded-lg shadow-sm p-6">
             <iframe
               src={`/embed/projects/${projectId}/visual`}
               className="w-full border-0"
-              style={{ height: '1200px' }}
+              style={{ height: "1200px" }}
               title="プロジェクトビジュアル分析"
             />
           </div>
         )}
 
-        {activeTab === 'chat' && (
+        {activeTab === "chat" && (
           <div className="bg-white rounded-lg shadow-sm p-6">
             <h2 className="text-xl font-semibold text-gray-900 mb-4">
               プロジェクトチャット
             </h2>
-            <ChatComponent projectId={projectId!} />
+            <ChatComponent projectId={projectId} />
           </div>
         )}
       </div>
