@@ -1,7 +1,7 @@
 import express from 'express';
+import { validateObjectId } from '../middleware/validateObjectId';
 import { CommentService } from '../services/commentService';
 import { StanceAnalyzer } from '../services/stanceAnalyzer';
-import { validateObjectId } from '../middleware/validateObjectId';
 
 const router = express.Router();
 
@@ -10,7 +10,7 @@ const stanceAnalyzer = new StanceAnalyzer();
 const commentService = new CommentService(stanceAnalyzer);
 
 // プロジェクトのコメント一覧の取得
-router.get('/projects/:projectId/comments', 
+router.get('/projects/:projectId/comments',
   validateObjectId('projectId'),
   async (req, res, next) => {
     try {

@@ -1,9 +1,9 @@
 import express from 'express';
+import { validateObjectId } from '../middleware/validateObjectId';
 import { AnalysisService } from '../services/analysisService';
-import { StanceReportGenerator } from '../services/stanceReportGenerator';
 import { ProjectReportGenerator } from '../services/projectReportGenerator';
 import { ProjectVisualReportGenerator } from '../services/projectVisualReportGenerator';
-import { validateObjectId } from '../middleware/validateObjectId';
+import { StanceReportGenerator } from '../services/stanceReportGenerator';
 
 const router = express.Router();
 
@@ -21,14 +21,14 @@ router.get('/projects/:projectId/questions/:questionId/stance-analysis',
       const { projectId, questionId } = req.params;
       const forceRegenerate = req.query.forceRegenerate === 'true';
       const customPrompt = req.query.customPrompt as string | undefined;
-      
+
       const analysis = await analysisService.analyzeStances(
         projectId,
         questionId,
         forceRegenerate,
         customPrompt
       );
-      
+
       res.json(analysis);
     } catch (error) {
       next(error);
@@ -44,13 +44,13 @@ router.get('/projects/:projectId/analysis',
       const projectId = req.params.projectId;
       const forceRegenerate = req.query.forceRegenerate === 'true';
       const customPrompt = req.query.customPrompt as string | undefined;
-      
+
       const analysis = await analysisService.generateProjectReport(
         projectId,
         forceRegenerate,
         customPrompt
       );
-      
+
       res.json(analysis);
     } catch (error) {
       next(error);
@@ -66,13 +66,13 @@ router.get('/projects/:projectId/visual-analysis',
       const projectId = req.params.projectId;
       const forceRegenerate = req.query.forceRegenerate === 'true';
       const customPrompt = req.query.customPrompt as string | undefined;
-      
+
       const analysis = await analysisService.generateProjectVisualReport(
         projectId,
         forceRegenerate,
         customPrompt
       );
-      
+
       res.json(analysis);
     } catch (error) {
       next(error);
@@ -87,7 +87,7 @@ router.get('/projects/:projectId/export-csv',
     try {
       const projectId = req.params.projectId;
       const csvData = await analysisService.exportProjectDataToCsv(projectId);
-      
+
       res.setHeader('Content-Type', 'text/csv');
       res.setHeader('Content-Disposition', `attachment; filename=project-${projectId}-export.csv`);
       res.send(csvData);

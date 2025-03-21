@@ -1,8 +1,8 @@
 import express from 'express';
-import { ProjectService } from '../services/projectService';
-import { StanceAnalyzer } from '../services/stanceAnalyzer';
-import { QuestionGenerator } from '../services/questionGenerator';
 import { validateObjectId } from '../middleware/validateObjectId';
+import { ProjectService } from '../services/projectService';
+import { QuestionGenerator } from '../services/questionGenerator';
+import { StanceAnalyzer } from '../services/stanceAnalyzer';
 
 const router = express.Router();
 
@@ -37,7 +37,7 @@ router.post('/', async (req, res, next) => {
 });
 
 // 特定のプロジェクトの取得
-router.get('/:projectId', 
+router.get('/:projectId',
   validateObjectId('projectId'),
   async (req, res, next) => {
     try {

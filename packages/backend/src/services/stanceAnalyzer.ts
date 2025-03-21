@@ -30,15 +30,15 @@ export class StanceAnalyzer {
       { id: 'neutral', name: '立場なし' },
       { id: 'other', name: 'その他の立場' }
     ];
-    
+
     const result = [...stances];
-    
+
     for (const special of specialStances) {
       if (!stances.some(s => s.name === special.name)) {
         result.push(special);
       }
     }
-    
+
     return result;
   }
 
@@ -53,15 +53,15 @@ export class StanceAnalyzer {
     // 特殊な立場を確実に含める
     const stancesWithSpecial = this.ensureSpecialStances(stances);
     const stanceOptions = stancesWithSpecial.map(s => s.name).join('", "');
-    
+
     const prompt = stancePrompts.stanceAnalysis(questionText, stanceOptions, context, customPrompt).replace('{content}', comment);
     console.log('Generated Prompt:', prompt);
-    
+
     const response = await openRouterService.chat({
       model: 'google/gemini-2.0-flash-001',
       messages: [{ role: 'user', content: prompt }],
     });
-    
+
     if (!response) {
       console.error('Analysis generation failed');
 
@@ -71,9 +71,9 @@ export class StanceAnalyzer {
         confidence: null,
       };
     }
-    
+
     const { stance, confidence } = await this.parseResponse(response);
-    
+
     // confidenceが0.8未満、またはnullの場合は結果を棄却
     if (!confidence || confidence < 0.8) {
       return {
@@ -85,7 +85,7 @@ export class StanceAnalyzer {
 
     // 立場名からIDを取得
     const matchedStance = stancesWithSpecial.find(s => s.name === stance);
-    
+
     if (!matchedStance) {
       // マッチする立場が見つからない場合はnullを返す
       return {
@@ -94,11 +94,11 @@ export class StanceAnalyzer {
         confidence: null,
       };
     }
-    
+
     return {
-    questionId,
-    stanceId: matchedStance.id,
-    confidence,
+      questionId,
+      stanceId: matchedStance.id,
+      confidence,
     };
   }
 

@@ -49,11 +49,11 @@ export async function extractContent(content: string, extractionTopic?: string, 
     .split(/\n+/)
     .map((line: string) => line.trim())
     .filter((line: string) => line.length > 0);
-  
+
   // If we have no extracted content, return null
   if (extractedContents.length === 0) {
     return null;
   }
-  
+
   return extractedContents;
 }
