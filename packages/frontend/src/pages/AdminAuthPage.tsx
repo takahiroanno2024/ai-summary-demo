@@ -1,15 +1,23 @@
-import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import type React from "react";
+import { useEffect, useRef, useState } from "react";
+import { useNavigate } from "react-router-dom";
 
 export const AdminAuthPage = () => {
-  const [adminKey, setAdminKey] = useState('');
+  const [adminKey, setAdminKey] = useState("");
   const navigate = useNavigate();
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    if (inputRef.current) {
+      inputRef.current.focus();
+    }
+  }, []);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (adminKey.trim()) {
-      localStorage.setItem('adminKey', adminKey.trim());
-      navigate('/');
+      localStorage.setItem("adminKey", adminKey.trim());
+      navigate("/");
     }
   };
 
@@ -30,7 +38,7 @@ export const AdminAuthPage = () => {
               value={adminKey}
               onChange={(e) => setAdminKey(e.target.value)}
               className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
-              autoFocus
+              ref={inputRef}
             />
           </div>
           <button

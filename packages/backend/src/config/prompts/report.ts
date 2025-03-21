@@ -1,33 +1,35 @@
-import { ReportPrompts } from './types';
-import { PromptTemplate } from '../../utils/promptTemplate';
+import { PromptTemplate } from "../../utils/promptTemplate";
+import type { ReportPrompts } from "./types";
 
 export const reportPrompts: ReportPrompts = {
   stanceReport: (
     questionText: string,
-    stanceAnalysisEntries: Array<[string, { count: number; comments: string[] }]>,
+    stanceAnalysisEntries: Array<
+      [string, { count: number; comments: string[] }]
+    >,
     stanceNames: Map<string, string>,
-    customPrompt?: string
+    customPrompt?: string,
   ) => {
     const stanceEntriesText = stanceAnalysisEntries
       .filter(([_, data]) => data.count > 0)
       .map(([stanceId, data]) => {
-        const stanceName = stanceNames.get(stanceId) || 'Unknown';
+        const stanceName = stanceNames.get(stanceId) || "Unknown";
         return `
 立場: ${stanceName}
 コメント数: ${data.count}
 コメント内容:
-${data.comments.join('\n')}
+${data.comments.join("\n")}
 `;
       })
-      .join('\n');
+      .join("\n");
 
     return PromptTemplate.generate(
-      customPrompt || 'stance-report',
+      customPrompt || "stance-report",
       {
         questionText,
-        stanceEntries: stanceEntriesText
+        stanceEntries: stanceEntriesText,
       },
-      !!customPrompt
+      !!customPrompt,
     );
   },
 
@@ -46,16 +48,16 @@ ${data.comments.join('\n')}
         };
       };
       analysis: string;
-    }>
+    }>,
   ) => {
     const totalComments = questionAnalyses.reduce(
       (total, qa) =>
         total +
         Object.values(qa.stanceAnalysis).reduce(
           (sum, stance) => sum + (stance?.count || 0),
-          0
+          0,
         ),
-      0
+      0,
     );
 
     const questionAnalysesText = questionAnalyses
@@ -68,22 +70,22 @@ ${Object.entries(qa.stanceAnalysis)
   .map(
     ([stance, data]) => `
 - ${stance}: ${data.count}件のコメント
-`
+`,
   )
-  .join('')}
+  .join("")}
 
 分析結果:
 ${qa.analysis}
-`
+`,
       )
-      .join('\n---\n');
+      .join("\n---\n");
 
-    return PromptTemplate.generate('project-report', {
+    return PromptTemplate.generate("project-report", {
       projectName: project.name,
       projectDescription: project.description,
       questionAnalyses: questionAnalysesText,
       totalComments: totalComments.toString(),
-      currentDate: new Date().toLocaleDateString()
+      currentDate: new Date().toLocaleDateString(),
     });
-  }
+  },
 };

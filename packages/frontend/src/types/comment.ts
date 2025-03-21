@@ -3,7 +3,7 @@ export type CommentSourceType = 'youtube' | 'x' | 'form' | 'chat' | 'other';
 export interface CommentStance {
   questionId: string;
   stanceId: string;
-  confidence: number;  // Gemini APIの判定信頼度
+  confidence: number; // Gemini APIの判定信頼度
 }
 
 export interface CommentInput {
@@ -21,7 +21,7 @@ export interface Comment {
   content: string;
   projectId: string;
   extractedContent?: string;
-  stances: CommentStance[];  // 論点
+  stances: CommentStance[]; // 論点
   createdAt: string;
   sourceType?: CommentSourceType;
   sourceUrl?: string;

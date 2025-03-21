@@ -5,5 +5,5 @@
  */
 export const convertBoldBrackets = (text: string): string => {
   // **「text」** -> 「**text**」の形式に変換
-  return text.replace(/\*\*「([^」]*?)」\*\*/g, '「**$1**」');
+  return text.replace(/\*\*「([^」]*?)」\*\*/g, "「**$1**」");
 };

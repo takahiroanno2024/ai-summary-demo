@@ -1,11 +1,11 @@
-import React from 'react';
-import { PromptSettingsForm } from '../components/PromptSettingsForm';
-import { CustomPrompts } from '../types/prompt';
+import React from "react";
+import { PromptSettingsForm } from "../components/PromptSettingsForm";
+import { CustomPrompts } from "../types/prompt";
 
 export const PromptSettingsPage: React.FC = () => {
   const handleSave = (prompts: CustomPrompts) => {
     // 保存完了時の処理（必要に応じて通知など）
-    console.log('Prompts saved:', prompts);
+    console.log("Prompts saved:", prompts);
   };
 
   return (

@@ -1,4 +1,4 @@
-import mongoose from 'mongoose';
+import mongoose from "mongoose";
 
 export interface IProjectAnalysis {
   projectId: mongoose.Types.ObjectId;
@@ -11,7 +11,7 @@ export interface IProjectAnalysis {
 const projectAnalysisSchema = new mongoose.Schema<IProjectAnalysis>({
   projectId: {
     type: mongoose.Schema.Types.ObjectId,
-    ref: 'Project',
+    ref: "Project",
     required: true,
   },
   projectName: {
@@ -35,4 +35,7 @@ const projectAnalysisSchema = new mongoose.Schema<IProjectAnalysis>({
 // プロジェクトIDでユニークにする
 projectAnalysisSchema.index({ projectId: 1 }, { unique: true });
 
-export const ProjectAnalysis = mongoose.model<IProjectAnalysis>('ProjectAnalysis', projectAnalysisSchema);
+export const ProjectAnalysis = mongoose.model<IProjectAnalysis>(
+  "ProjectAnalysis",
+  projectAnalysisSchema,
+);

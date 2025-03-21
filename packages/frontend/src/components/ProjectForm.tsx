@@ -1,6 +1,6 @@
-import { useState } from 'react';
-import { Question } from '../types/project';
-import { v4 as uuidv4 } from 'uuid';
+import { useState } from "react";
+import { Question } from "../types/project";
+import { v4 as uuidv4 } from "uuid";
 
 interface ProjectFormProps {
   onSubmit: (
@@ -8,7 +8,7 @@ interface ProjectFormProps {
     description: string,
     extractionTopic: string,
     context: string,
-    questions: Question[]
+    questions: Question[],
   ) => Promise<void>;
   initialData?: {
     name: string;
@@ -17,77 +17,97 @@ interface ProjectFormProps {
     context?: string;
     questions?: Question[];
   };
-  mode?: 'create' | 'edit';
+  mode?: "create" | "edit";
 }
 
-export const ProjectForm = ({ onSubmit, initialData, mode = 'create' }: ProjectFormProps) => {
-  const [name, setName] = useState(initialData?.name || '');
-  const [description, setDescription] = useState(initialData?.description || '');
-  const [extractionTopic, setExtractionTopic] = useState(initialData?.extractionTopic || '');
-  const [context, setContext] = useState(initialData?.context || '');
-  const [questions, setQuestions] = useState<Question[]>(initialData?.questions || []);
+export const ProjectForm = ({
+  onSubmit,
+  initialData,
+  mode = "create",
+}: ProjectFormProps) => {
+  const [name, setName] = useState(initialData?.name || "");
+  const [description, setDescription] = useState(
+    initialData?.description || "",
+  );
+  const [extractionTopic, setExtractionTopic] = useState(
+    initialData?.extractionTopic || "",
+  );
+  const [context, setContext] = useState(initialData?.context || "");
+  const [questions, setQuestions] = useState<Question[]>(
+    initialData?.questions || [],
+  );
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   // 新しい論点を追加
   const addQuestion = () => {
     const newQuestion: Question = {
       id: uuidv4(),
-      text: '',
+      text: "",
       stances: [
-        { id: uuidv4(), name: '立場なし' } // デフォルトの立場を追加
-      ]
+        { id: uuidv4(), name: "立場なし" }, // デフォルトの立場を追加
+      ],
     };
     setQuestions([...questions, newQuestion]);
   };
 
   // 論点を削除
   const removeQuestion = (questionId: string) => {
-    setQuestions(questions.filter(q => q.id !== questionId));
+    setQuestions(questions.filter((q) => q.id !== questionId));
   };
 
   // 論点のテキストを更新
   const updateQuestionText = (questionId: string, text: string) => {
-    setQuestions(questions.map(q =>
-      q.id === questionId ? { ...q, text } : q
-    ));
+    setQuestions(
+      questions.map((q) => (q.id === questionId ? { ...q, text } : q)),
+    );
   };
 
   // 新しい立場を追加
   const addStance = (questionId: string) => {
-    setQuestions(questions.map(q =>
-      q.id === questionId
-        ? {
-            ...q,
-            stances: [...q.stances, { id: uuidv4(), name: '' }]
-          }
-        : q
-    ));
+    setQuestions(
+      questions.map((q) =>
+        q.id === questionId
+          ? {
+              ...q,
+              stances: [...q.stances, { id: uuidv4(), name: "" }],
+            }
+          : q,
+      ),
+    );
   };
 
   // 立場を削除
   const removeStance = (questionId: string, stanceId: string) => {
-    setQuestions(questions.map(q =>
-      q.id === questionId
-        ? {
-            ...q,
-            stances: q.stances.filter(s => s.id !== stanceId)
-          }
-        : q
-    ));
+    setQuestions(
+      questions.map((q) =>
+        q.id === questionId
+          ? {
+              ...q,
+              stances: q.stances.filter((s) => s.id !== stanceId),
+            }
+          : q,
+      ),
+    );
   };
 
   // 立場の名前を更新
-  const updateStanceName = (questionId: string, stanceId: string, name: string) => {
-    setQuestions(questions.map(q =>
-      q.id === questionId
-        ? {
-            ...q,
-            stances: q.stances.map(s =>
-              s.id === stanceId ? { ...s, name } : s
-            )
-          }
-        : q
-    ));
+  const updateStanceName = (
+    questionId: string,
+    stanceId: string,
+    name: string,
+  ) => {
+    setQuestions(
+      questions.map((q) =>
+        q.id === questionId
+          ? {
+              ...q,
+              stances: q.stances.map((s) =>
+                s.id === stanceId ? { ...s, name } : s,
+              ),
+            }
+          : q,
+      ),
+    );
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -97,15 +117,15 @@ export const ProjectForm = ({ onSubmit, initialData, mode = 'create' }: ProjectF
     setIsSubmitting(true);
     try {
       await onSubmit(name, description, extractionTopic, context, questions);
-      if (mode === 'create') {
-        setName('');
-        setDescription('');
-        setExtractionTopic('');
-        setContext('');
+      if (mode === "create") {
+        setName("");
+        setDescription("");
+        setExtractionTopic("");
+        setContext("");
         setQuestions([]);
       }
     } catch (error) {
-      console.error('Error creating project:', error);
+      console.error("Error creating project:", error);
     } finally {
       setIsSubmitting(false);
     }
@@ -114,7 +134,10 @@ export const ProjectForm = ({ onSubmit, initialData, mode = 'create' }: ProjectF
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
       <div>
-        <label htmlFor="name" className="block text-sm font-medium text-gray-700">
+        <label
+          htmlFor="name"
+          className="block text-sm font-medium text-gray-700"
+        >
           プロジェクト名
         </label>
         <input
@@ -127,7 +150,10 @@ export const ProjectForm = ({ onSubmit, initialData, mode = 'create' }: ProjectF
         />
       </div>
       <div>
-        <label htmlFor="description" className="block text-sm font-medium text-gray-700">
+        <label
+          htmlFor="description"
+          className="block text-sm font-medium text-gray-700"
+        >
           説明
         </label>
         <textarea
@@ -139,7 +165,10 @@ export const ProjectForm = ({ onSubmit, initialData, mode = 'create' }: ProjectF
         />
       </div>
       <div>
-        <label htmlFor="extractionTopic" className="block text-sm font-medium text-gray-700">
+        <label
+          htmlFor="extractionTopic"
+          className="block text-sm font-medium text-gray-700"
+        >
           抽出トピック
         </label>
         <textarea
@@ -153,7 +182,10 @@ export const ProjectForm = ({ onSubmit, initialData, mode = 'create' }: ProjectF
       </div>
 
       <div>
-        <label htmlFor="context" className="block text-sm font-medium text-gray-700">
+        <label
+          htmlFor="context"
+          className="block text-sm font-medium text-gray-700"
+        >
           プロジェクトの背景情報
         </label>
         <textarea
@@ -169,7 +201,9 @@ export const ProjectForm = ({ onSubmit, initialData, mode = 'create' }: ProjectF
       {/* 論点と立場の設定セクション */}
       <div className="space-y-4">
         <div className="flex justify-between items-center">
-          <h3 className="text-lg font-medium text-gray-900">論点と立場の設定</h3>
+          <h3 className="text-lg font-medium text-gray-900">
+            論点と立場の設定
+          </h3>
           <button
             type="button"
             onClick={addQuestion}
@@ -189,7 +223,9 @@ export const ProjectForm = ({ onSubmit, initialData, mode = 'create' }: ProjectF
                 <input
                   type="text"
                   value={question.text}
-                  onChange={(e) => updateQuestionText(question.id, e.target.value)}
+                  onChange={(e) =>
+                    updateQuestionText(question.id, e.target.value)
+                  }
                   className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
                   placeholder="論点を入力してください"
                   required
@@ -222,12 +258,14 @@ export const ProjectForm = ({ onSubmit, initialData, mode = 'create' }: ProjectF
                   <input
                     type="text"
                     value={stance.name}
-                    onChange={(e) => updateStanceName(question.id, stance.id, e.target.value)}
+                    onChange={(e) =>
+                      updateStanceName(question.id, stance.id, e.target.value)
+                    }
                     className="block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
                     placeholder="立場の名前"
                     required
                   />
-                  {stance.name !== '立場なし' && (
+                  {stance.name !== "立場なし" && (
                     <button
                       type="button"
                       onClick={() => removeStance(question.id, stance.id)}
@@ -249,8 +287,12 @@ export const ProjectForm = ({ onSubmit, initialData, mode = 'create' }: ProjectF
         className="w-full bg-blue-500 text-white py-2 px-4 rounded-md hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50"
       >
         {isSubmitting
-          ? (mode === 'create' ? '作成中...' : '更新中...')
-          : (mode === 'create' ? 'プロジェクトを作成' : '設定を更新')}
+          ? mode === "create"
+            ? "作成中..."
+            : "更新中..."
+          : mode === "create"
+            ? "プロジェクトを作成"
+            : "設定を更新"}
       </button>
     </form>
   );

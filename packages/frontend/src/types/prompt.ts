@@ -1,11 +1,11 @@
 // プロンプトの種類を定義
-export type PromptType = 
-  | 'stanceAnalysis'
-  | 'contentExtraction'
-  | 'questionGeneration'
-  | 'relevanceCheck'
-  | 'stanceReport'
-  | 'projectReport';
+export type PromptType =
+  | "stanceAnalysis"
+  | "contentExtraction"
+  | "questionGeneration"
+  | "relevanceCheck"
+  | "stanceReport"
+  | "projectReport";
 
 // カスタムプロンプトの設定インターフェース
 export interface CustomPrompts {
@@ -28,7 +28,7 @@ export const defaultPrompts: Partial<CustomPrompts> = {
 };
 
 // LocalStorageのキー
-export const STORAGE_KEY = 'customPrompts';
+export const STORAGE_KEY = "customPrompts";
 
 // プロンプト設定のバリデーション
 export interface PromptValidation {
@@ -38,11 +38,11 @@ export interface PromptValidation {
 
 export const validatePrompt = (prompt: string): PromptValidation => {
   if (!prompt.trim()) {
-    return { isValid: false, error: 'プロンプトを入力してください' };
+    return { isValid: false, error: "プロンプトを入力してください" };
   }
-  
+
   if (prompt.length > 10000) {
-    return { isValid: false, error: 'プロンプトが長すぎます（最大10000文字）' };
+    return { isValid: false, error: "プロンプトが長すぎます（最大10000文字）" };
   }
 
   return { isValid: true };
