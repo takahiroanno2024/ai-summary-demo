@@ -61,7 +61,7 @@ const commentSchema = new mongoose.Schema<IComment>({
   },
   sourceType: {
     type: String,
-    enum: ["youtube", "x", "form", "other"],
+    enum: ['youtube', 'x', 'form', 'chat', 'other'],
     required: false,
   },
   sourceUrl: {

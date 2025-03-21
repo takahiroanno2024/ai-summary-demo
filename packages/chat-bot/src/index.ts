@@ -211,7 +211,7 @@ ${userMessage}
       `/projects/${projectId}/comments`,
       {
         content: analysisResult.content,
-        sourceType: "other",
+        sourceType: "chat",
         sourceUrl: null,
       },
     );

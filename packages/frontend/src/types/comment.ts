@@ -1,4 +1,4 @@
-export type CommentSourceType = "youtube" | "x" | "form" | "other";
+export type CommentSourceType = 'youtube' | 'x' | 'form' | 'chat' | 'other';
 
 export interface CommentStance {
   questionId: string;

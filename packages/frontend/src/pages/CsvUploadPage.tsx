@@ -376,8 +376,8 @@ const CsvUploadPage: React.FC = () => {
               />
             </label>
             <p className="mt-1 text-sm text-gray-500">
-              必要な列: content, sourceType ('youtube' | 'x' | 'form' | 'other'
-              | null), sourceUrl (optional)
+              必要な列: content, sourceType ('youtube' | 'x' | 'form' | 'chat'
+              | 'other' | null), sourceUrl (optional)
             </p>
           </div>
           {selectedFile && previewData?.isValid && !isProcessing && (
