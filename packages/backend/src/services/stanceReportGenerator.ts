@@ -1,8 +1,8 @@
 import mongoose from "mongoose";
-import OpenAI from "openai";
 import { reportPrompts } from "../config/prompts";
 import type { IComment } from "../models/comment";
 import { type IStanceAnalysis, StanceAnalysis } from "../models/stanceAnalysis";
+import { openRouterService } from "./openRouterService";
 
 export interface StanceAnalysisResult {
   question: string;
@@ -16,15 +16,6 @@ export interface StanceAnalysisResult {
 }
 
 export class StanceReportGenerator {
-  private openai: OpenAI;
-
-  constructor(apiKey: string) {
-    this.openai = new OpenAI({
-      baseURL: "https://openrouter.ai/api/v1",
-      apiKey: apiKey,
-    });
-  }
-
   async getAnalysis(
     projectId: string,
     questionId: string,
@@ -98,12 +89,12 @@ export class StanceReportGenerator {
     const stanceNames = new Map(stances.map((s) => [s.id, s.name]));
 
     // 初期化
-    for (const stance of stances) {
+    stances.forEach((stance) => {
       stanceAnalysis.set(stance.id, { count: 0, comments: [] });
-    }
+    });
 
     // コメントを分類
-    for (const comment of comments) {
+    comments.forEach((comment) => {
       const stance = comment.stances?.find((s) => s.questionId === questionId);
       if (stance && comment.extractedContent) {
         const analysis = stanceAnalysis.get(stance.stanceId);
@@ -112,7 +103,7 @@ export class StanceReportGenerator {
           analysis.comments.push(comment.extractedContent);
         }
       }
-    }
+    });
 
     try {
       // Geminiによる分析
@@ -123,20 +114,20 @@ export class StanceReportGenerator {
         hasCustomPrompt: !!customPrompt,
       });
 
-      let prompt: string;
+      let prompt;
       try {
         prompt = customPrompt
           ? reportPrompts.stanceReport(
-              questionText,
-              Array.from(stanceAnalysis.entries()),
-              stanceNames,
-              customPrompt,
-            )
+            questionText,
+            Array.from(stanceAnalysis.entries()),
+            stanceNames,
+            customPrompt,
+          )
           : reportPrompts.stanceReport(
-              questionText,
-              Array.from(stanceAnalysis.entries()),
-              stanceNames,
-            );
+            questionText,
+            Array.from(stanceAnalysis.entries()),
+            stanceNames,
+          );
         console.log("Generated prompt:", prompt);
       } catch (error: any) {
         console.error("Failed to generate prompt:", error);
@@ -145,26 +136,13 @@ export class StanceReportGenerator {
         );
       }
 
-      let analysis: string;
-      try {
-        const completion = await this.openai.chat.completions.create({
-          model: "google/gemini-2.0-flash-001",
-          messages: [
-            {
-              role: "user",
-              content: prompt,
-            },
-          ],
-        });
+      const analysis = await openRouterService.chat({
+        model: "google/gemini-2.0-flash-001",
+        messages: [{ role: "user", content: prompt }],
+      });
 
-        console.log("Raw OpenRouter response:", completion);
-        analysis = completion.choices[0].message.content || "";
-        console.log("Parsed analysis:", analysis);
-      } catch (error: any) {
-        console.error("OpenRouter API error:", error);
-        throw new Error(
-          `OpenRouter API error: ${error?.message || "Unknown error"}`,
-        );
+      if (!analysis) {
+        throw new Error("Analysis generation failed in openRouterService");
       }
 
       // 分析結果をデータベースに保存

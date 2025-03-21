@@ -1,12 +1,11 @@
 import mongoose from "mongoose";
-import OpenAI from "openai";
-import { reportPrompts } from "../config/prompts";
 import type { IComment } from "../models/comment";
 import type { IProject } from "../models/project";
 import {
   type IProjectVisualAnalysis,
   ProjectVisualAnalysis,
 } from "../models/projectVisualAnalysis";
+import { openRouterService } from "./openRouterService";
 import { ProjectReportGenerator } from "./projectReportGenerator";
 
 export interface ProjectVisualAnalysisResult {
@@ -15,15 +14,10 @@ export interface ProjectVisualAnalysisResult {
 }
 
 export class ProjectVisualReportGenerator {
-  private openai: OpenAI;
   private projectReportGenerator: ProjectReportGenerator;
 
-  constructor(apiKey: string) {
-    this.openai = new OpenAI({
-      baseURL: "https://openrouter.ai/api/v1",
-      apiKey: apiKey,
-    });
-    this.projectReportGenerator = new ProjectReportGenerator(apiKey);
+  constructor() {
+    this.projectReportGenerator = new ProjectReportGenerator();
   }
 
   async getAnalysis(projectId: string): Promise<IProjectVisualAnalysis | null> {
@@ -132,20 +126,17 @@ ${markdownReport.overallAnalysis}
 ---
 レスポンスは完全なHTML+CSSコードのみを返してください。`;
 
-      const completion = await this.openai.chat.completions.create({
+      const completion = await openRouterService.chat({
         model: "anthropic/claude-3.7-sonnet",
-        messages: [
-          {
-            role: "user",
-            content: visualPrompt,
-          },
-        ],
+        messages: [{ role: "user", content: visualPrompt }],
       });
 
-      let overallAnalysis = completion.choices[0].message.content || "";
+      if (!completion) {
+        throw new Error("Failed to generate OpenRouter completion");
+      }
 
       // Remove HTML tags wrapper if they exist
-      overallAnalysis = overallAnalysis.replace(/^```html|```$/g, "").trim();
+      const overallAnalysis = completion.replace(/^```html|```$/g, "").trim();
 
       // 分析結果をデータベースに保存 (既存のドキュメントがあれば更新、なければ新規作成)
       await ProjectVisualAnalysis.findOneAndUpdate(

@@ -6,7 +6,7 @@ import { StanceAnalyzer } from "../services/stanceAnalyzer";
 const router = express.Router();
 
 // サービスのインスタンスを作成
-const stanceAnalyzer = new StanceAnalyzer(process.env.OPENROUTER_API_KEY || "");
+const stanceAnalyzer = new StanceAnalyzer();
 const commentService = new CommentService(stanceAnalyzer);
 
 // プロジェクトのコメント一覧の取得

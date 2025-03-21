@@ -8,10 +8,9 @@ import { StanceReportGenerator } from "../services/stanceReportGenerator";
 const router = express.Router();
 
 // サービスのインスタンスを作成
-const apiKey = process.env.OPENROUTER_API_KEY || "";
-const stanceReportGenerator = new StanceReportGenerator(apiKey);
-const projectReportGenerator = new ProjectReportGenerator(apiKey);
-const projectVisualReportGenerator = new ProjectVisualReportGenerator(apiKey);
+const stanceReportGenerator = new StanceReportGenerator();
+const projectReportGenerator = new ProjectReportGenerator();
+const projectVisualReportGenerator = new ProjectVisualReportGenerator();
 const analysisService = new AnalysisService(
   stanceReportGenerator,
   projectReportGenerator,
