@@ -1,6 +1,6 @@
-import { useState } from 'react';
-import { Project } from '../types/project';
-import { CommentInput, CommentOptions } from '../types/comment';
+import { useState } from "react";
+import type { CommentInput, CommentOptions } from "../types/comment";
+import type { Project } from "../types/project";
 
 interface CommentFormProps {
   onSubmit: (data: CommentInput, options: CommentOptions) => Promise<void>;
@@ -8,8 +8,11 @@ interface CommentFormProps {
   isAdmin?: boolean;
 }
 
-export const CommentForm = ({ onSubmit, isAdmin = false }: CommentFormProps) => {
-  const [content, setContent] = useState('');
+export const CommentForm = ({
+  onSubmit,
+  isAdmin = false,
+}: CommentFormProps) => {
+  const [content, setContent] = useState("");
   const [skipDuplicates, setSkipDuplicates] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -27,13 +30,13 @@ export const CommentForm = ({ onSubmit, isAdmin = false }: CommentFormProps) => 
       await onSubmit(
         {
           content,
-          sourceType: 'form',
+          sourceType: "form",
         },
-        { skipDuplicates }
+        { skipDuplicates },
       );
-      setContent('');
+      setContent("");
     } catch (error) {
-      console.error('Error submitting comment:', error);
+      console.error("Error submitting comment:", error);
     } finally {
       setIsSubmitting(false);
     }
@@ -42,7 +45,10 @@ export const CommentForm = ({ onSubmit, isAdmin = false }: CommentFormProps) => 
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
       <div>
-        <label htmlFor="content" className="block text-sm font-medium text-gray-700">
+        <label
+          htmlFor="content"
+          className="block text-sm font-medium text-gray-700"
+        >
           コメント
         </label>
         <div className="mt-1">
@@ -65,7 +71,10 @@ export const CommentForm = ({ onSubmit, isAdmin = false }: CommentFormProps) => 
           onChange={(e) => setSkipDuplicates(e.target.checked)}
           className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
         />
-        <label htmlFor="skipDuplicates" className="ml-2 block text-sm text-gray-700">
+        <label
+          htmlFor="skipDuplicates"
+          className="ml-2 block text-sm text-gray-700"
+        >
           重複コメントをスキップする
         </label>
       </div>
@@ -77,14 +86,33 @@ export const CommentForm = ({ onSubmit, isAdmin = false }: CommentFormProps) => 
       >
         {isSubmitting ? (
           <span className="flex items-center justify-center">
-            <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+            <svg
+              className="animate-spin -ml-1 mr-3 h-5 w-5 text-white"
+              xmlns="http://www.w3.org/2000/svg"
+              fill="none"
+              viewBox="0 0 24 24"
+              role="img"
+              aria-label="読み込み中"
+            >
+              <title>読み込み中</title>
+              <circle
+                className="opacity-25"
+                cx="12"
+                cy="12"
+                r="10"
+                stroke="currentColor"
+                strokeWidth="4"
+              />
+              <path
+                className="opacity-75"
+                fill="currentColor"
+                d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+              />
             </svg>
             コメントを分析中...
           </span>
         ) : (
-          'コメントを投稿'
+          "コメントを投稿"
         )}
       </button>
     </form>

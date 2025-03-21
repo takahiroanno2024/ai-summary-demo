@@ -1,4 +1,4 @@
-import mongoose from 'mongoose';
+import mongoose from "mongoose";
 
 export interface IStance {
   id: string;
@@ -79,4 +79,4 @@ const projectSchema = new mongoose.Schema<IProject>({
   },
 });
 
-export const Project = mongoose.model<IProject>('Project', projectSchema);
+export const Project = mongoose.model<IProject>("Project", projectSchema);

@@ -1,29 +1,32 @@
-import React, { useState, useEffect } from 'react';
+import type React from "react";
+import { useEffect, useState } from "react";
+import { getDefaultPrompts } from "../config/api";
 import {
-  CustomPrompts,
-  PromptType,
+  type CustomPrompts,
+  type PromptType,
+  STORAGE_KEY,
   validatePrompt,
-  STORAGE_KEY
-} from '../types/prompt';
-import { getDefaultPrompts } from '../config/api';
+} from "../types/prompt";
 
 interface PromptSettingsFormProps {
   onSave?: (prompts: CustomPrompts) => void;
 }
 
 const promptTypeLabels: Record<PromptType, string> = {
-  stanceAnalysis: '立場分析',
-  contentExtraction: 'コンテンツ抽出',
-  questionGeneration: '質問生成',
-  relevanceCheck: '関連性チェック',
-  stanceReport: '立場レポート',
-  projectReport: 'プロジェクトレポート'
+  stanceAnalysis: "立場分析",
+  contentExtraction: "コンテンツ抽出",
+  questionGeneration: "質問生成",
+  relevanceCheck: "関連性チェック",
+  stanceReport: "立場レポート",
+  projectReport: "プロジェクトレポート",
 };
 
-export const PromptSettingsForm: React.FC<PromptSettingsFormProps> = ({ onSave }) => {
+export const PromptSettingsForm: React.FC<PromptSettingsFormProps> = ({
+  onSave,
+}) => {
   const [prompts, setPrompts] = useState<CustomPrompts>({});
   const [defaultPrompts, setDefaultPrompts] = useState<CustomPrompts>({});
-  const [activeType, setActiveType] = useState<PromptType>('stanceAnalysis');
+  const [activeType, setActiveType] = useState<PromptType>("stanceAnalysis");
   const [error, setError] = useState<string | undefined>();
   const [isLoading, setIsLoading] = useState(true);
 
@@ -41,7 +44,7 @@ export const PromptSettingsForm: React.FC<PromptSettingsFormProps> = ({ onSave }
         const defaults = await getDefaultPrompts();
         setDefaultPrompts(defaults);
       } catch (e) {
-        console.error('Failed to load prompts:', e);
+        console.error("Failed to load prompts:", e);
       } finally {
         setIsLoading(false);
       }
@@ -68,7 +71,7 @@ export const PromptSettingsForm: React.FC<PromptSettingsFormProps> = ({ onSave }
 
     const newPrompts = {
       ...prompts,
-      [type]: content.trim() || undefined
+      [type]: content.trim() || undefined,
     };
     savePrompts(newPrompts);
   };
@@ -90,7 +93,7 @@ export const PromptSettingsForm: React.FC<PromptSettingsFormProps> = ({ onSave }
   return (
     <div className="max-w-4xl mx-auto p-4">
       <h2 className="text-2xl font-bold mb-4">プロンプト設定</h2>
-      
+
       {/* プロンプトタイプ選択 */}
       <div className="mb-4">
         <label className="block text-sm font-medium mb-2">
@@ -121,25 +124,25 @@ export const PromptSettingsForm: React.FC<PromptSettingsFormProps> = ({ onSave }
         ) : (
           <textarea
             className="w-full p-2 border rounded min-h-[200px]"
-            value={prompts[activeType] || defaultPrompts[activeType] || ''}
+            value={prompts[activeType] || defaultPrompts[activeType] || ""}
             onChange={(e) => handlePromptChange(activeType, e.target.value)}
             placeholder="カスタムプロンプトを入力してください"
           />
         )}
-        {error && (
-          <p className="text-red-500 text-sm mt-1">{error}</p>
-        )}
+        {error && <p className="text-red-500 text-sm mt-1">{error}</p>}
       </div>
 
       {/* アクションボタン */}
       <div className="flex gap-4">
         <button
+          type="button"
           className="px-4 py-2 bg-red-500 text-white rounded hover:bg-red-600"
           onClick={() => handleReset(activeType)}
         >
           このプロンプトをリセット
         </button>
         <button
+          type="button"
           className="px-4 py-2 bg-red-700 text-white rounded hover:bg-red-800"
           onClick={handleResetAll}
         >
@@ -153,7 +156,7 @@ export const PromptSettingsForm: React.FC<PromptSettingsFormProps> = ({ onSave }
         <div className="bg-gray-50 p-4 rounded">
           {Object.entries(promptTypeLabels).map(([type, label]) => (
             <div key={type} className="mb-2">
-              <span className="font-medium">{label}:</span>{' '}
+              <span className="font-medium">{label}:</span>{" "}
               {prompts[type as PromptType] ? (
                 <span className="text-blue-600">カスタム設定</span>
               ) : defaultPrompts[type as PromptType] ? (

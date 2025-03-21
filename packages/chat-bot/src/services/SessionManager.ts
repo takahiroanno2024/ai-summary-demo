@@ -1,5 +1,5 @@
-import { ChatSession, ChatMessage } from '../types';
-import { v4 as uuidv4 } from 'uuid';
+import { v4 as uuidv4 } from "uuid";
+import type { ChatMessage, ChatSession } from "../types";
 
 export class SessionManager {
   private sessions: Map<string, ChatSession> = new Map();
@@ -15,7 +15,7 @@ export class SessionManager {
       id: uuidv4(),
       projectId,
       history: [],
-      lastActivity: new Date()
+      lastActivity: new Date(),
     };
     this.sessions.set(session.id, session);
     return session;
@@ -29,7 +29,11 @@ export class SessionManager {
     return session;
   }
 
-  addMessage(sessionId: string, content: string, sender: 'user' | 'bot'): ChatMessage | undefined {
+  addMessage(
+    sessionId: string,
+    content: string,
+    sender: "user" | "bot",
+  ): ChatMessage | undefined {
     const session = this.getSession(sessionId);
     if (!session) return undefined;
 
@@ -37,7 +41,7 @@ export class SessionManager {
       id: uuidv4(),
       content,
       timestamp: new Date(),
-      sender
+      sender,
     };
 
     session.history.push(message);

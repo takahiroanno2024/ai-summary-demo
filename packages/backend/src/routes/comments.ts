@@ -1,30 +1,34 @@
-import express from 'express';
-import { CommentService } from '../services/commentService';
-import { StanceAnalyzer } from '../services/stanceAnalyzer';
-import { validateObjectId } from '../middleware/validateObjectId';
+import express from "express";
+import { validateObjectId } from "../middleware/validateObjectId";
+import { CommentService } from "../services/commentService";
+import { StanceAnalyzer } from "../services/stanceAnalyzer";
 
 const router = express.Router();
 
 // サービスのインスタンスを作成
-const stanceAnalyzer = new StanceAnalyzer(process.env.OPENROUTER_API_KEY || '');
+const stanceAnalyzer = new StanceAnalyzer();
 const commentService = new CommentService(stanceAnalyzer);
 
 // プロジェクトのコメント一覧の取得
-router.get('/projects/:projectId/comments', 
-  validateObjectId('projectId'),
+router.get(
+  "/projects/:projectId/comments",
+  validateObjectId("projectId"),
   async (req, res, next) => {
     try {
-      const comments = await commentService.getProjectComments(req.params.projectId);
+      const comments = await commentService.getProjectComments(
+        req.params.projectId,
+      );
       res.json(comments);
     } catch (error) {
       next(error);
     }
-  }
+  },
 );
 
 // プロジェクトへのコメント追加
-router.post('/projects/:projectId/comments',
-  validateObjectId('projectId'),
+router.post(
+  "/projects/:projectId/comments",
+  validateObjectId("projectId"),
   async (req, res, next) => {
     try {
       const { content, sourceType, sourceUrl, skipDuplicates } = req.body;
@@ -33,33 +37,34 @@ router.post('/projects/:projectId/comments',
         {
           content,
           sourceType,
-          sourceUrl
+          sourceUrl,
         },
-        { skipDuplicates }
+        { skipDuplicates },
       );
       res.status(201).json(result);
     } catch (error) {
       next(error);
     }
-  }
+  },
 );
 
 // コメントの一括インポート
-router.post('/projects/:projectId/comments/bulk',
-  validateObjectId('projectId'),
+router.post(
+  "/projects/:projectId/comments/bulk",
+  validateObjectId("projectId"),
   async (req, res, next) => {
     try {
       const { comments, skipDuplicates } = req.body;
       const savedComments = await commentService.bulkImportComments(
         req.params.projectId,
         comments,
-        { skipDuplicates }
+        { skipDuplicates },
       );
       res.status(201).json(savedComments);
     } catch (error) {
       next(error);
     }
-  }
+  },
 );
 
 export default router;

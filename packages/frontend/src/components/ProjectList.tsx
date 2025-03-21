@@ -1,5 +1,5 @@
-import { Project } from '../types/project';
-import { Link } from 'react-router-dom';
+import { Link } from "react-router-dom";
+import type { Project } from "../types/project";
 
 interface ProjectListProps {
   projects: Project[];
@@ -7,7 +7,11 @@ interface ProjectListProps {
   showEditButton?: boolean;
 }
 
-export const ProjectList = ({ projects, onEdit, showEditButton = true }: ProjectListProps) => {
+export const ProjectList = ({
+  projects,
+  onEdit,
+  showEditButton = true,
+}: ProjectListProps) => {
   return (
     <div className="space-y-4">
       {projects.map((project) => (
@@ -26,7 +30,9 @@ export const ProjectList = ({ projects, onEdit, showEditButton = true }: Project
                   <p className="mt-2 text-gray-700">{project.description}</p>
                 )}
                 <div className="mt-2 flex items-center gap-2 text-sm text-gray-500">
-                  <span>{new Date(project.createdAt).toLocaleDateString()}</span>
+                  <span>
+                    {new Date(project.createdAt).toLocaleDateString()}
+                  </span>
                   <span>•</span>
                   <span>{project.commentCount}件のコメント</span>
                   <span>•</span>
@@ -36,6 +42,7 @@ export const ProjectList = ({ projects, onEdit, showEditButton = true }: Project
             </div>
             {onEdit && showEditButton && (
               <button
+                type="button"
                 onClick={() => onEdit(project)}
                 className="ml-4 px-3 py-1 text-sm text-blue-600 hover:text-blue-700 hover:bg-blue-50 rounded-md transition-colors"
               >
@@ -46,7 +53,9 @@ export const ProjectList = ({ projects, onEdit, showEditButton = true }: Project
         </div>
       ))}
       {projects.length === 0 && (
-        <p className="text-center text-gray-500">プロジェクトはまだありません</p>
+        <p className="text-center text-gray-500">
+          プロジェクトはまだありません
+        </p>
       )}
     </div>
   );

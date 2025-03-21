@@ -1,6 +1,13 @@
-import { PieChart, Pie, Cell, ResponsiveContainer, Legend, Tooltip } from 'recharts';
-import { Comment } from '../types/comment';
-import { Question } from '../types/project';
+import {
+  Cell,
+  Legend,
+  Pie,
+  PieChart,
+  ResponsiveContainer,
+  Tooltip,
+} from "recharts";
+import type { Comment } from "../types/comment";
+import type { Question } from "../types/project";
 
 interface StanceGraphComponentProps {
   comments: Comment[];
@@ -15,14 +22,14 @@ interface StanceStats {
 
 // 円グラフ用の色
 export const CHART_COLORS = [
-  '#3B82F6', // blue-500
-  '#10B981', // emerald-500
-  '#F59E0B', // amber-500
-  '#EF4444', // red-500
-  '#8B5CF6', // violet-500
-  '#EC4899', // pink-500
-  '#6366F1', // indigo-500
-  '#14B8A6', // teal-500
+  "#3B82F6", // blue-500
+  "#10B981", // emerald-500
+  "#F59E0B", // amber-500
+  "#EF4444", // red-500
+  "#8B5CF6", // violet-500
+  "#EC4899", // pink-500
+  "#6366F1", // indigo-500
+  "#14B8A6", // teal-500
 ];
 
 // カスタムツールチップ
@@ -38,36 +45,42 @@ const CustomTooltip = ({ active, payload }: any) => {
   return null;
 };
 
-export const StanceGraphComponent = ({ comments, selectedQuestion, showTitle = true }: StanceGraphComponentProps) => {
+export const StanceGraphComponent = ({
+  comments,
+  selectedQuestion,
+  showTitle = true,
+}: StanceGraphComponentProps) => {
   // 立場の名前を取得する関数
   const getStanceName = (stanceId: string): string => {
-    if (stanceId === 'other') return 'その他の立場';
-    if (!selectedQuestion) return '';
-    
-    const stance = selectedQuestion.stances.find(s => s.id === stanceId);
-    return stance ? stance.name : '';
+    if (stanceId === "other") return "その他の立場";
+    if (!selectedQuestion) return "";
+
+    const stance = selectedQuestion.stances.find((s) => s.id === stanceId);
+    return stance ? stance.name : "";
   };
 
   // 論点と立場ごとのコメントを集計
-  const calculateStanceStats = (question: Question): Record<string, StanceStats> => {
+  const calculateStanceStats = (
+    question: Question,
+  ): Record<string, StanceStats> => {
     const stats: Record<string, StanceStats> = {};
-    
+
     // 統計オブジェクトを初期化
-    question.stances.forEach((stance) => {
+    for (const stance of question.stances) {
       stats[stance.id] = { count: 0, comments: [] };
-    });
+    }
     // その他の立場用の初期化
-    stats['other'] = { count: 0, comments: [] };
-    
-    comments.forEach((comment) => {
+    stats.other = { count: 0, comments: [] };
+
+    for (const comment of comments) {
       const stance = comment.stances.find((s) => s.questionId === question.id);
       if (stance) {
         if (stats[stance.stanceId]) {
-          stats[stance.stanceId].count += 1;
+          stats[stance.stanceId].count++;
           stats[stance.stanceId].comments.push(comment);
         }
       }
-    });
+    }
 
     return stats;
   };
@@ -112,7 +125,7 @@ export const StanceGraphComponent = ({ comments, selectedQuestion, showTitle = t
               >
                 {chartData.map((_, index) => (
                   <Cell
-                    key={`cell-${index}`}
+                    key={`cell-${chartData[index].name}-${index}`}
                     fill={CHART_COLORS[index % CHART_COLORS.length]}
                   />
                 ))}

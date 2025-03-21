@@ -9,11 +9,11 @@ export interface ChatMessage {
   id: string;
   content: string;
   timestamp: Date;
-  sender: 'user' | 'bot';
+  sender: "user" | "bot";
 }
 
 export interface WebSocketMessage {
-  type: 'message' | 'ping' | 'pong';
+  type: "message" | "ping" | "pong";
   content?: string;
 }
 

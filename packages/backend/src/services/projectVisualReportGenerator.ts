@@ -1,10 +1,12 @@
-import OpenAI from 'openai';
-import mongoose from 'mongoose';
-import { IProject } from '../models/project';
-import { IComment } from '../models/comment';
-import { ProjectReportGenerator } from './projectReportGenerator';
-import { ProjectVisualAnalysis, IProjectVisualAnalysis } from '../models/projectVisualAnalysis';
-import { reportPrompts } from '../config/prompts';
+import mongoose from "mongoose";
+import type { IComment } from "../models/comment";
+import type { IProject } from "../models/project";
+import {
+  type IProjectVisualAnalysis,
+  ProjectVisualAnalysis,
+} from "../models/projectVisualAnalysis";
+import { openRouterService } from "./openRouterService";
+import { ProjectReportGenerator } from "./projectReportGenerator";
 
 export interface ProjectVisualAnalysisResult {
   projectName: string;
@@ -12,55 +14,51 @@ export interface ProjectVisualAnalysisResult {
 }
 
 export class ProjectVisualReportGenerator {
-  private openai: OpenAI;
   private projectReportGenerator: ProjectReportGenerator;
 
-  constructor(apiKey: string) {
-    this.openai = new OpenAI({
-      baseURL: 'https://openrouter.ai/api/v1',
-      apiKey: apiKey,
-    });
-    this.projectReportGenerator = new ProjectReportGenerator(apiKey);
+  constructor() {
+    this.projectReportGenerator = new ProjectReportGenerator();
   }
 
-  async getAnalysis(
-    projectId: string
-  ): Promise<IProjectVisualAnalysis | null> {
+  async getAnalysis(projectId: string): Promise<IProjectVisualAnalysis | null> {
     return ProjectVisualAnalysis.findOne({
-      projectId: new mongoose.Types.ObjectId(projectId)
+      projectId: new mongoose.Types.ObjectId(projectId),
     });
   }
 
   async generateProjectVisualReport(
     project: IProject & { _id: mongoose.Types.ObjectId },
     comments: IComment[],
-    forceRegenerate: boolean = false,
-    customPrompt?: string
+    forceRegenerate = false,
+    customPrompt?: string,
   ): Promise<ProjectVisualAnalysisResult> {
     try {
       // 強制再生成でない場合のみ既存の分析結果を確認
-      console.log('Checking for existing visual analysis...');
+      console.log("Checking for existing visual analysis...");
       const existingAnalysis = await this.getAnalysis(project._id.toString());
-      console.log('Existing visual analysis:', existingAnalysis);
+      console.log("Existing visual analysis:", existingAnalysis);
       if (!forceRegenerate && existingAnalysis) {
-        console.log('Using existing visual analysis');
+        console.log("Using existing visual analysis");
         return {
           projectName: existingAnalysis.projectName,
-          overallAnalysis: existingAnalysis.overallAnalysis
+          overallAnalysis: existingAnalysis.overallAnalysis,
         };
       }
-      console.log('No existing visual analysis found or force regenerate is true');
+      console.log(
+        "No existing visual analysis found or force regenerate is true",
+      );
 
       // プロジェクトレポートジェネレーターからマークダウンレポートを取得
-      console.log('Getting markdown report from project report generator...');
-      const markdownReport = await this.projectReportGenerator.generateProjectReport(
-        project,
-        comments,
-        forceRegenerate,
-        customPrompt
-      );
-      
-      console.log('Markdown report generated successfully');
+      console.log("Getting markdown report from project report generator...");
+      const markdownReport =
+        await this.projectReportGenerator.generateProjectReport(
+          project,
+          comments,
+          forceRegenerate,
+          customPrompt,
+        );
+
+      console.log("Markdown report generated successfully");
 
       // マークダウンレポートをHTML+CSSに変換するための指示
       const visualPrompt = `
@@ -73,38 +71,39 @@ export class ProjectVisualReportGenerator {
 ### 1. カラースキーム
 
   <palette>
-  <color name='ファッション-1' rgb='593C47' r='89' g='59' b='70' />
-  <color name='ファッション-2' rgb='F2E63D' r='242' g='230' b='60' />
-  <color name='ファッション-3' rgb='F2C53D' r='242' g='196' b='60' />
-  <color name='ファッション-4' rgb='F25C05' r='242' g='91' b='4' />
-  <color name='ファッション-5' rgb='F24405' r='242' g='68' b='4' />
+  <color name='青-1' rgb='0A2463' r='10' g='36' b='99' />
+  <color name='青-2' rgb='1E5EF3' r='30' g='94' b='243' />
+  <color name='青-3' rgb='00A8E8' r='0' g='168' b='232' />
+  <color name='青-4' rgb='38B6FF' r='56' g='182' b='255' />
+  <color name='青-5' rgb='8CDBFF' r='140' g='219' b='255' />
   </palette>
 
 ### 2. グラフィックレコーディング要素
 - 左上から右へ、上から下へと情報を順次配置
-- 日本語の手書き風フォントの使用（Yomogi, Zen Kurenaido, Kaisei Decol）
+- 日本語の手書き風フォントの使用（Zen Maru Gothic）
 - 手描き風の囲み線、矢印、バナー、吹き出し
 - テキストと視覚要素（アイコン、シンプルな図形）の組み合わせ
 - キーワードの強調（色付き下線、マーカー効果）
 - 関連する概念を線や矢印で接続
 - 絵文字やアイコンを効果的に配置（✏️📌📝🔍📊など）
 ### 3. タイポグラフィ
-  - タイトル：32px、グラデーション効果、太字
-  - サブタイトル：16px、#475569
-  - セクション見出し：18px、#1e40af、アイコン付き
-  - 本文：14px、#334155、行間1.4
+  - タイトル：48px、グラデーション効果、太字
+  - サブタイトル：28px、#475569
+  - セクション見出し：32px、#1e40af、アイコン付き
+  - 本文：24px、#334155、行間1.6
   - フォント指定：
     <style>
-    @import url('https://fonts.googleapis.com/css2?family=Kaisei+Decol&family=Yomogi&family=Zen+Kurenaido&display=swap');
+    @import url('https://fonts.googleapis.com/css2?family=Zen+Maru+Gothic&display=swap');
     </style>
 
 ### 4. レイアウト
-  - ヘッダー：左揃えタイトル＋右揃え日付/出典
-  - 3カラム構成：左側33%、中央33%、右側33%
-  - カード型コンポーネント：白背景、角丸12px、微細シャドウ
-  - セクション間の適切な余白と階層構造
+  - ヘッダー：右上に小さく日付/出典。その下に、左揃えタイトル。
+  - 1カラム構成：幅100%の単一カラム
+  - カード型コンポーネント：白背景、角丸16px、微細シャドウ
+  - セクション間の余白を広めに取り、階層構造を明確に
   - 適切にグラスモーフィズムを活用
-  - コンテンツの横幅は100%にして
+  - コンテンツの最大幅は600pxで中央揃え
+  - 余白を十分に取り、読みやすさを重視
 
 ## グラフィックレコーディング表現技法
 - テキストと視覚要素のバランスを重視
@@ -116,28 +115,28 @@ export class ProjectVisualReportGenerator {
 ## 全体的な指針
 - 読み手が自然に視線を移動できる配置
 - 情報の階層と関連性を視覚的に明確化
-- 手書き風の要素で親しみやすさを演出
 - 視覚的な記憶に残るデザイン
+- 遠くからでも見やすいデザイン
 - フッターに出典情報を明記
+- 複雑すぎる構造はCSSが壊れる可能性があるため避ける
+- 単に原文のキーワードだけ書いても意味が分からないため、誰にでも伝わるような分かりやすい表現に書き換えて説明する
+
 ## 変換する文章/記事
 ${markdownReport.overallAnalysis}
 ---
 レスポンスは完全なHTML+CSSコードのみを返してください。`;
 
-      const completion = await this.openai.chat.completions.create({
-        model: 'anthropic/claude-3.7-sonnet',
-        messages: [
-          {
-            role: 'user',
-            content: visualPrompt,
-          },
-        ],
+      const completion = await openRouterService.chat({
+        model: "anthropic/claude-3.7-sonnet",
+        messages: [{ role: "user", content: visualPrompt }],
       });
-      
-      let overallAnalysis = completion.choices[0].message.content || '';
+
+      if (!completion) {
+        throw new Error("Failed to generate OpenRouter completion");
+      }
 
       // Remove HTML tags wrapper if they exist
-      overallAnalysis = overallAnalysis.replace(/^```html|```$/g, '').trim();
+      const overallAnalysis = completion.replace(/^```html|```$/g, "").trim();
 
       // 分析結果をデータベースに保存 (既存のドキュメントがあれば更新、なければ新規作成)
       await ProjectVisualAnalysis.findOneAndUpdate(
@@ -146,17 +145,17 @@ ${markdownReport.overallAnalysis}
           projectId: project._id,
           projectName: project.name,
           overallAnalysis,
-          updatedAt: new Date()
+          updatedAt: new Date(),
         },
-        { upsert: true, new: true }
+        { upsert: true, new: true },
       );
 
       return {
         projectName: project.name,
-        overallAnalysis
+        overallAnalysis,
       };
     } catch (error) {
-      console.error('Project visual analysis generation failed:', error);
+      console.error("Project visual analysis generation failed:", error);
       throw error;
     }
   }
