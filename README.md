@@ -9,12 +9,19 @@
 
 # 開発への参加方法について
 
-- 本PJは、開発者の方からのコントリビュートを募集しています！ぜひ一緒に日本のデジタル民主主義を前に進めましょう！
-- プロジェクトのタスクは[GitHub Project](https://github.com/orgs/takahiroanno2024/projects/4)で管理されています。
-    - [good first issueタグ](https://github.com/orgs/takahiroanno2024/projects/4/views/1?filterQuery=good+first+issue)がついたIssueは特に取り組みやすくなっています！
+- 本PJは、開発者の方からのコントリビュートを募集しています！ぜひ一緒に日本のデジタル民主主義を進めましょう！
+- プロジェクトのタスクは[GitHub Project](https://github.com/orgs/digitaldemocracy2030/projects/1/views/1)で管理されています。
+    - [good first issueタグ](https://github.com/orgs/takahiroanno2024/projects/4/views/1?filterQuery=good+first+issue?filterQuery=good+first+issue)がついたIssueは特に取り組みやすくなっています！
 - プロジェクトについてのやりとりは、原則[デジタル民主主義2030のSlackの「開発_いどばた」チャンネル](https://w1740803485-clv347541.slack.com/archives/C08FF5MM59C)までお願いします
 - コントリビュートにあたっては、本リポジトリのrootディレクトリにあるCLA.md（コントリビューターライセンス）へ同意が必要です。
     - 同意する手順は、Pull Requestのテンプレートに記載があります
+
+## Issue/Pull Requestについて
+- 重複して同じIssueに取り組むのを避けるため、Issueに着手される際はご自身のアカウントをasigneeに指定してください
+  - イシュー上で、 `/assign` というコメントを記載していただくと、Issueのasigneeとして登録されます
+    - 権限の関係で、一部のコントリビューターを除いてアサインの割当ができないためこのような運用にしています
+  - 割当を解除したい場合は、 `/unassign` というコメントを記載していただくと、Issueのasigneeから外れます
+- Issueはどなたでも起票いただいて構いません。ツールの利用時に感じた改善点やバグについてぜひIssueを起票してください。
 
 # 論点整理モジュール
 
@@ -35,6 +42,12 @@ cp packages/backend/.env.example packages/backend/.env
 # フロントエンド
 cp packages/frontend/.env.example packages/frontend/.env
 ```
+
+このコードは
+```bash
+sh ./copy-env.sh
+```
+で実行できます。
 
 ADMIN_API_KEYは、あなたの環境における管理者認証のためのAPIキーです。好きな文字列を設定してください。
 

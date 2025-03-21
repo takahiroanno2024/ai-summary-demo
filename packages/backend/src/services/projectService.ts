@@ -1,27 +1,29 @@
-import { Project, IProject, IQuestion } from '../models/project';
-import { Comment } from '../models/comment';
-import { StanceAnalyzer } from './stanceAnalyzer';
-import { QuestionGenerator } from './questionGenerator';
-import { v4 as uuidv4 } from 'uuid';
-import { AppError } from '../middleware/errorHandler';
-import { processInBatches } from '../utils/batchProcessor';
+import { v4 as uuidv4 } from "uuid";
+import { AppError } from "../middleware/errorHandler";
+import { Comment } from "../models/comment";
+import { IProject, type IQuestion, Project } from "../models/project";
+import { processInBatches } from "../utils/batchProcessor";
+import type { QuestionGenerator } from "./questionGenerator";
+import type { StanceAnalyzer } from "./stanceAnalyzer";
 
 export class ProjectService {
   constructor(
     private stanceAnalyzer: StanceAnalyzer,
-    private questionGenerator: QuestionGenerator
+    private questionGenerator: QuestionGenerator,
   ) {}
 
   async getAllProjects() {
     const projects = await Project.find().sort({ createdAt: -1 });
     const projectsWithCommentCount = await Promise.all(
       projects.map(async (project) => {
-        const commentCount = await Comment.countDocuments({ projectId: project._id });
+        const commentCount = await Comment.countDocuments({
+          projectId: project._id,
+        });
         return {
           ...project.toObject(),
-          commentCount
+          commentCount,
         };
-      })
+      }),
     );
     return projectsWithCommentCount;
   }
@@ -29,12 +31,16 @@ export class ProjectService {
   async getProjectById(projectId: string) {
     const project = await Project.findById(projectId);
     if (!project) {
-      throw new AppError(404, 'Project not found');
+      throw new AppError(404, "Project not found");
     }
     return project;
   }
 
-  async createProject(data: { name: string; description: string; extractionTopic: string }) {
+  async createProject(data: {
+    name: string;
+    description: string;
+    extractionTopic: string;
+  }) {
     const project = new Project({
       ...data,
       questions: [],
@@ -42,23 +48,28 @@ export class ProjectService {
     return await project.save();
   }
 
-  async updateProject(projectId: string, data: {
-    name: string;
-    description: string;
-    extractionTopic: string;
-    questions: IQuestion[];
-  }) {
+  async updateProject(
+    projectId: string,
+    data: {
+      name: string;
+      description: string;
+      extractionTopic: string;
+      questions: IQuestion[];
+    },
+  ) {
     const currentProject = await this.getProjectById(projectId);
-    const hasQuestionsChanged = JSON.stringify(currentProject.questions) !== JSON.stringify(data.questions);
+    const hasQuestionsChanged =
+      JSON.stringify(currentProject.questions) !==
+      JSON.stringify(data.questions);
 
-    const updatedProject = await Project.findByIdAndUpdate(
-      projectId,
-      data,
-      { new: true }
-    );
+    const updatedProject = await Project.findByIdAndUpdate(projectId, data, {
+      new: true,
+    });
 
     if (hasQuestionsChanged && data.questions) {
-      console.log(`Questions changed for project ${projectId}. Starting comment reanalysis...`);
+      console.log(
+        `Questions changed for project ${projectId}. Starting comment reanalysis...`,
+      );
       await this.reanalyzeComments(projectId, data.questions);
     }
 
@@ -68,33 +79,34 @@ export class ProjectService {
   async generateQuestions(projectId: string) {
     const project = await this.getProjectById(projectId);
     const comments = await Comment.find({ projectId });
-    
+
     const extractedContents = comments
-      .map(comment => comment.extractedContent)
+      .map((comment) => comment.extractedContent)
       .filter((content): content is string => content !== null);
 
     if (extractedContents.length === 0) {
-      throw new AppError(400, 'No extracted contents found in this project');
+      throw new AppError(400, "No extracted contents found in this project");
     }
 
-    const generatedQuestions = await this.questionGenerator.generateQuestions(extractedContents);
+    const generatedQuestions =
+      await this.questionGenerator.generateQuestions(extractedContents);
     if (generatedQuestions.length === 0) {
-      throw new AppError(500, 'Failed to generate questions');
+      throw new AppError(500, "Failed to generate questions");
     }
 
-    const formattedQuestions = generatedQuestions.map(q => ({
+    const formattedQuestions = generatedQuestions.map((q) => ({
       id: uuidv4(),
       text: q.text,
-      stances: q.stances.map(s => ({
+      stances: q.stances.map((s) => ({
         id: uuidv4(),
-        name: s.name
-      }))
+        name: s.name,
+      })),
     }));
 
     const updatedProject = await Project.findByIdAndUpdate(
       projectId,
       { questions: formattedQuestions },
-      { new: true }
+      { new: true },
     );
 
     await this.reanalyzeComments(projectId, formattedQuestions);
@@ -103,9 +115,11 @@ export class ProjectService {
 
   private async reanalyzeComments(projectId: string, questions: IQuestion[]) {
     const comments = await Comment.find({ projectId });
-    const commentsToAnalyze = comments.filter(comment => comment.extractedContent);
-    
-    const mappedQuestions = questions.map(q => ({
+    const commentsToAnalyze = comments.filter(
+      (comment) => comment.extractedContent,
+    );
+
+    const mappedQuestions = questions.map((q) => ({
       id: q.id,
       text: q.text,
       stances: q.stances,
@@ -115,16 +129,19 @@ export class ProjectService {
       commentsToAnalyze,
       25,
       async (comment) => {
+        if (!comment.extractedContent) {
+          throw new AppError(400, "No extracted content found in this comment");
+        }
         // 既存の立場情報を引き継ぐように修正
         const newStances = await this.stanceAnalyzer.analyzeAllStances(
-          comment.extractedContent!,
+          comment.extractedContent,
           mappedQuestions,
-          comment.stances || [] // 既存の立場情報を渡す
+          comment.stances || [], // 既存の立場情報を渡す
         );
-        
+
         await Comment.findByIdAndUpdate(comment._id, { stances: newStances });
       },
-      0
+      0,
     );
   }
 }

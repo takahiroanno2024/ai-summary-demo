@@ -2,7 +2,7 @@ export interface ChatMessage {
   id: string;
   content: string;
   timestamp: Date;
-  sender: 'user' | 'bot';
+  sender: "user" | "bot";
 }
 
 export interface ChatSession {
@@ -13,6 +13,6 @@ export interface ChatSession {
 }
 
 export interface WebSocketMessage {
-  type: 'message';
+  type: "message";
   content: string;
 }

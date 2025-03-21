@@ -1,5 +1,5 @@
-import { Request, Response, NextFunction } from 'express';
-import { AppError } from './errorHandler';
+import type { NextFunction, Request, Response } from "express";
+import { AppError } from "./errorHandler";
 
 interface PathPattern {
   pattern: string;
@@ -12,53 +12,65 @@ interface PublicEndpoint {
   conditions?: (req: Request) => boolean;
 }
 
-export function authMiddleware(req: Request, res: Response, next: NextFunction) {
+export function authMiddleware(
+  req: Request,
+  res: Response,
+  next: NextFunction,
+) {
   const method = req.method;
   const path = req.path;
   const query = req.query;
-  const apiKey = req.headers['x-api-key'];
-  const isAdmin = (apiKey && apiKey === process.env.ADMIN_API_KEY);
+  const apiKey = req.headers["x-api-key"];
+  const isAdmin = apiKey && apiKey === process.env.ADMIN_API_KEY;
 
   // 非Adminでもアクセス可能なエンドポイントの定義
   const publicEndpoints: PublicEndpoint[] = [
     {
-      method: 'GET',
+      method: "GET",
       pathPattern: {
-        pattern: '/projects/:projectId',
-        params: ['projectId']
-      }
+        pattern: "/projects/:projectId",
+        params: ["projectId"],
+      },
     },
     // コメント関連
     {
-      method: 'GET',
+      method: "GET",
       pathPattern: {
-        pattern: '/projects/:projectId/comments',
-        params: ['projectId']
-      }
+        pattern: "/projects/:projectId/comments",
+        params: ["projectId"],
+      },
     },
     // 分析関連
     {
-      method: 'GET',
+      method: "GET",
       pathPattern: {
-        pattern: '/projects/:projectId/questions/:questionId/stance-analysis',
-        params: ['projectId', 'questionId']
+        pattern: "/projects/:projectId/questions/:questionId/stance-analysis",
+        params: ["projectId", "questionId"],
       },
-      conditions: (req) => req.query.forceRegenerate !== 'true'
+      conditions: (req) => req.query.forceRegenerate !== "true",
     },
     {
-      method: 'GET',
+      method: "GET",
       pathPattern: {
-        pattern: '/projects/:projectId/analysis',
-        params: ['projectId']
+        pattern: "/projects/:projectId/analysis",
+        params: ["projectId"],
       },
-      conditions: (req) => req.query.forceRegenerate !== 'true'
-    }
+      conditions: (req) => req.query.forceRegenerate !== "true",
+    },
+    {
+      method: "GET",
+      pathPattern: {
+        pattern: "/projects/:projectId/visual-analysis",
+        params: ["projectId"],
+      },
+      conditions: (req) => req.query.forceRegenerate !== "true",
+    },
   ];
 
   // パスパターンがマッチするかチェックする関数
   function matchesPattern(path: string, pattern: PathPattern): boolean {
-    const pathParts = path.split('/').filter(Boolean);
-    const patternParts = pattern.pattern.split('/').filter(Boolean);
+    const pathParts = path.split("/").filter(Boolean);
+    const patternParts = pattern.pattern.split("/").filter(Boolean);
 
     if (pathParts.length !== patternParts.length) {
       return false;
@@ -70,7 +82,7 @@ export function authMiddleware(req: Request, res: Response, next: NextFunction) 
       const patternPart = patternParts[i];
       const pathPart = pathParts[i];
 
-      if (patternPart.startsWith(':')) {
+      if (patternPart.startsWith(":")) {
         // パラメータの場合
         const paramName = patternPart.slice(1);
         if (!pattern.params.includes(paramName)) {
@@ -99,7 +111,7 @@ export function authMiddleware(req: Request, res: Response, next: NextFunction) 
 
   // 上記以外はすべてAdmin権限が必要
   if (!isAdmin) {
-    throw new AppError(403, 'Admin privileges required');
+    throw new AppError(403, "Admin privileges required");
   }
 
   next();

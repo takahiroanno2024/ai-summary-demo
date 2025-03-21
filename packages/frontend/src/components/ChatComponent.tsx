@@ -1,5 +1,5 @@
-import { useEffect, useState, useRef } from 'react';
-import { ChatMessage } from '../types/chat';
+import { useCallback, useEffect, useRef, useState } from "react";
+import type { ChatMessage } from "../types/chat";
 
 interface ChatComponentProps {
   projectId: string;
@@ -7,43 +7,47 @@ interface ChatComponentProps {
 
 export const ChatComponent = ({ projectId }: ChatComponentProps) => {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
-  const [inputMessage, setInputMessage] = useState('');
+  const [inputMessage, setInputMessage] = useState("");
   const [isConnected, setIsConnected] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const wsRef = useRef<WebSocket | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
-  const scrollToBottom = () => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  };
+  const scrollToBottom = useCallback(() => {
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, []);
 
   useEffect(() => {
     scrollToBottom();
-  }, [messages]);
+  }, [scrollToBottom]);
 
   useEffect(() => {
-    const wsUrl = `${import.meta.env.VITE_CHAT_WS_URL || 'ws://localhost:3030'}/project/${projectId}/chat`;
+    const wsUrl = `${
+      import.meta.env.VITE_CHAT_WS_URL || "ws://localhost:3030"
+    }/project/${projectId}/chat`;
     const ws = new WebSocket(wsUrl);
     wsRef.current = ws;
-    
+
     // Ping interval to keep connection alive (every 30 seconds)
     let pingInterval: number | null = null;
 
     ws.onopen = () => {
       setIsConnected(true);
       setError(null);
-      
+
       // Send a fake "こんにちは" message when connection is established
       // but don't display it in the UI
-      ws.send(JSON.stringify({
-        type: 'message',
-        content: 'こんにちは'
-      }));
-      
+      ws.send(
+        JSON.stringify({
+          type: "message",
+          content: "こんにちは",
+        }),
+      );
+
       // Setup ping interval to keep connection alive
       pingInterval = window.setInterval(() => {
         if (ws.readyState === WebSocket.OPEN) {
-          ws.send(JSON.stringify({ type: 'ping' }));
+          ws.send(JSON.stringify({ type: "ping" }));
         }
       }, 10000); // Send ping every 30 seconds
     };
@@ -54,19 +58,19 @@ export const ChatComponent = ({ projectId }: ChatComponentProps) => {
         setError(data.error);
         return;
       }
-      if (data.type === 'message' && data.message) {
+      if (data.type === "message" && data.message) {
         const newMessage: ChatMessage = {
           id: data.message.id,
           content: data.message.content,
           timestamp: new Date(data.message.timestamp),
-          sender: data.message.sender
+          sender: data.message.sender,
         };
-        setMessages(prev => [...prev, newMessage]);
+        setMessages((prev) => [...prev, newMessage]);
       }
     };
 
     ws.onerror = () => {
-      setError('WebSocketの接続中にエラーが発生しました');
+      setError("WebSocketの接続中にエラーが発生しました");
       setIsConnected(false);
     };
 
@@ -79,7 +83,7 @@ export const ChatComponent = ({ projectId }: ChatComponentProps) => {
       if (pingInterval) {
         clearInterval(pingInterval);
       }
-      
+
       if (ws.readyState === WebSocket.OPEN) {
         ws.close();
       }
@@ -93,37 +97,39 @@ export const ChatComponent = ({ projectId }: ChatComponentProps) => {
       id: crypto.randomUUID(),
       content: inputMessage,
       timestamp: new Date(),
-      sender: 'user'
+      sender: "user",
     };
 
-    wsRef.current.send(JSON.stringify({
-      type: 'message',
-      content: inputMessage
-    }));
+    wsRef.current.send(
+      JSON.stringify({
+        type: "message",
+        content: inputMessage,
+      }),
+    );
 
-    setMessages(prev => [...prev, message]);
-    setInputMessage('');
+    setMessages((prev) => [...prev, message]);
+    setInputMessage("");
   };
 
   return (
     <div className="flex flex-col h-[600px] bg-white rounded-lg shadow-sm">
       {error && (
-        <div className="bg-red-50 text-red-700 p-4 text-sm">
-          {error}
-        </div>
+        <div className="bg-red-50 text-red-700 p-4 text-sm">{error}</div>
       )}
-      
+
       <div className="flex-1 overflow-y-auto p-4 space-y-4">
         {messages.map((message) => (
           <div
             key={message.id}
-            className={`flex ${message.sender === 'user' ? 'justify-end' : 'justify-start'}`}
+            className={`flex ${
+              message.sender === "user" ? "justify-end" : "justify-start"
+            }`}
           >
             <div
               className={`max-w-[70%] rounded-lg p-3 ${
-                message.sender === 'user'
-                  ? 'bg-blue-500 text-white'
-                  : 'bg-gray-100 text-gray-900'
+                message.sender === "user"
+                  ? "bg-blue-500 text-white"
+                  : "bg-gray-100 text-gray-900"
               }`}
             >
               <p className="text-sm">{message.content}</p>
@@ -142,12 +148,13 @@ export const ChatComponent = ({ projectId }: ChatComponentProps) => {
             type="text"
             value={inputMessage}
             onChange={(e) => setInputMessage(e.target.value)}
-            onKeyPress={(e) => e.key === 'Enter' && sendMessage()}
+            onKeyPress={(e) => e.key === "Enter" && sendMessage()}
             placeholder="メッセージを入力..."
             className="flex-1 rounded-lg border border-gray-300 px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
             disabled={!isConnected}
           />
           <button
+            type="button"
             onClick={sendMessage}
             disabled={!isConnected || !inputMessage.trim()}
             className="bg-blue-500 text-white px-4 py-2 rounded-lg hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed"
