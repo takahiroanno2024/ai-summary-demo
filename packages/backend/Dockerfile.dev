@@ -2,13 +2,18 @@ FROM node:18-alpine
 
 WORKDIR /app
 
+# 開発環境では devDependencies もインストールするため NODE_ENV を development に設定
+ENV NODE_ENV=development
+
 COPY package*.json ./
 COPY tsconfig.json ./
 
+# すべての依存関係をインストール
 RUN npm install
 
 COPY . .
 
 EXPOSE 3001
 
+# ts-node-dev でホットリロード
 CMD ["npm", "run", "dev"]
