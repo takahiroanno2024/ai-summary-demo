@@ -1,52 +1,65 @@
-import fs from 'fs';
-import path from 'path';
+import fs from "node:fs";
+import path from "node:path";
 
-export class PromptTemplate {
-  private static templateCache: Map<string, string> = new Map();
-  private static templateDir = path.resolve(__dirname, '../../src/config/prompt-templates');
+const templateCache: Map<string, string> = new Map();
+const templateDir = path.resolve(
+  __dirname,
+  "../../src/config/prompt-templates",
+);
 
-  static getDefaultPrompt(templateName: string): string {
-    const cachedTemplate = this.templateCache.get(templateName);
-    if (cachedTemplate) {
-      return cachedTemplate;
-    }
-
-    const templatePath = path.join(this.templateDir, `${templateName}.txt`);
-    const template = fs.readFileSync(templatePath, 'utf-8');
-    this.templateCache.set(templateName, template);
-    return template;
+function getDefaultPrompt(templateName: string): string {
+  const cachedTemplate = templateCache.get(templateName);
+  if (cachedTemplate) {
+    return cachedTemplate;
   }
 
-  private static replaceVariables(template: string, variables: Record<string, string>): string {
-    let result = template;
+  const templatePath = path.join(templateDir, `${templateName}.txt`);
+  const template = fs.readFileSync(templatePath, "utf-8");
+  templateCache.set(templateName, template);
+  return template;
+}
 
-    // Handle context_block special case
-    if ('context' in variables) {
-      const contextBlock = variables.context ? `背景情報:
+function replaceVariables(
+  template: string,
+  variables: Record<string, string>,
+): string {
+  let result = template;
+
+  // Handle context_block special case
+  if ("context" in variables) {
+    const contextBlock = variables.context
+      ? `背景情報:
 """
 ${variables.context}
 """
 
-` : '';
-      result = result.replace('$context_block', contextBlock);
-    }
-
-    // Replace all other variables
-    for (const [key, value] of Object.entries(variables)) {
-      if (key === 'context') continue; // Skip context as it's handled above
-      const regex = new RegExp(`\\$${key}`, 'g');
-      result = result.replace(regex, value);
-    }
-
-    return result;
+`
+      : "";
+    result = result.replace("$context_block", contextBlock);
   }
 
-  static generate(
-    templateNameOrCustomPrompt: string,
-    variables: Record<string, string>,
-    isCustomPrompt: boolean = false
-  ): string {
-    const template = isCustomPrompt ? templateNameOrCustomPrompt : this.getDefaultPrompt(templateNameOrCustomPrompt);
-    return this.replaceVariables(template, variables);
+  // Replace all other variables
+  for (const [key, value] of Object.entries(variables)) {
+    if (key === "context") continue; // Skip context as it's handled above
+    const regex = new RegExp(`\\$${key}`, "g");
+    result = result.replace(regex, value);
   }
+
+  return result;
 }
+
+export function generate(
+  templateNameOrCustomPrompt: string,
+  variables: Record<string, string>,
+  isCustomPrompt = false,
+): string {
+  const template = isCustomPrompt
+    ? templateNameOrCustomPrompt
+    : getDefaultPrompt(templateNameOrCustomPrompt);
+  return replaceVariables(template, variables);
+}
+
+export const PromptTemplate = {
+  generate,
+  getDefaultPrompt,
+};

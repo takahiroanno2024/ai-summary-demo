@@ -1,6 +1,6 @@
-import { Request, Response, NextFunction } from 'express';
-import mongoose from 'mongoose';
-import { AppError } from './errorHandler';
+import type { NextFunction, Request, Response } from "express";
+import mongoose from "mongoose";
+import { AppError } from "./errorHandler";
 
 export const validateObjectId = (paramName: string) => {
   return (req: Request, res: Response, next: NextFunction) => {
